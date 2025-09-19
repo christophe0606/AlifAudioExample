@@ -2,6 +2,8 @@
 #include "dave_driver.h"
 #include CMSIS_device_header
 
+#include "cmsis_os2.h" /* CMSIS-RTOS2 API */
+
 #include "arm_math_types.h"
 #include "disp.h"
 #include "image.h"
@@ -12,11 +14,19 @@
 
 #define ROTATE_180
 
-#define NB_BIN 32
+static osMutexId_t g_mutex;
+
 static float32_t bin[NB_BIN];
 
 // Gradient
 uint32_t grad_1x256[256];
+
+void new_data(float *new_bins) {
+  if (osMutexAcquire(g_mutex, osWaitForever) == osOK) {
+    memcpy(bin, new_bins, sizeof(bin));
+    osMutexRelease(g_mutex);
+  }
+}
 
 void updateBins() {
   for (int i = 0; i < NB_BIN; i++) {
@@ -30,33 +40,37 @@ void updateBins() {
 
 void drawBins(d2_device *handle) {
 
-  const int BIN_WIDTH = MY_DISP_VER_RES / (NB_BIN + 1);
-  for (int i = 0; i < NB_BIN; i++) {
-    int h = (int)(bin[i] * MY_DISP_HOR_RES);
-    if (h > MY_DISP_HOR_RES)
-      h = MY_DISP_HOR_RES;
-    if (h == 0)
-      continue;
+  //if (osMutexAcquire(g_mutex, osWaitForever) == osOK) {
 
-    // d2_setfillmode(handle, d2_fm_color);
-    // d2_setcolor(handle, 0,0x00FF0000);
+    const int BIN_WIDTH = MY_DISP_VER_RES / (NB_BIN + 1);
+    for (int i = 0; i < NB_BIN; i++) {
+      int h = (int)(bin[i] * MY_DISP_HOR_RES);
+      if (h > MY_DISP_HOR_RES)
+        h = MY_DISP_HOR_RES;
+      if (h == 0)
+        continue;
 
-    d2_settexturemapping(
-        handle, D2_FIX4(0),
-        D2_FIX4((i)*BIN_WIDTH), // screen position for (u0,v0)
-        0 << 16, 0 << 16,   // u0, v0 (start)
-        0, 0,   
-        (256 << 16) / MY_DISP_HOR_RES,0  
-    );
+      // d2_setfillmode(handle, d2_fm_color);
+      // d2_setcolor(handle, 0,0x00FF0000);
 
-    d2_renderquad(handle, D2_FIX4(0), D2_FIX4((i)*BIN_WIDTH), D2_FIX4(h),
-                  D2_FIX4((i)*BIN_WIDTH), D2_FIX4(h),
-                  D2_FIX4((i + 1) * BIN_WIDTH), D2_FIX4(0),
-                  D2_FIX4((i + 1) * BIN_WIDTH), 0);
-  }
+      d2_settexturemapping(
+          handle, D2_FIX4(0),
+          D2_FIX4((i)*BIN_WIDTH), // screen position for (u0,v0)
+          0 << 16, 0 << 16,       // u0, v0 (start)
+          0, 0, (256 << 16) / MY_DISP_HOR_RES, 0);
+
+      d2_renderquad(handle, D2_FIX4(0), D2_FIX4((i)*BIN_WIDTH), D2_FIX4(h),
+                    D2_FIX4((i)*BIN_WIDTH), D2_FIX4(h),
+                    D2_FIX4((i + 1) * BIN_WIDTH-2), D2_FIX4(0),
+                    D2_FIX4((i + 1) * BIN_WIDTH-2), 0);
+    }
+    //osMutexRelease(g_mutex);
+  //}
 }
 
 int init_spectrogram() {
+
+  g_mutex = osMutexNew(NULL);
 
   for (int i = 0; i < 256; i++) {
     if (i < 128) {
@@ -72,7 +86,9 @@ int init_spectrogram() {
 
 void free_spectrogram() {}
 
-void update_data() { updateBins(); }
+void update_data() { 
+  
+}
 
 void display_data() {
   // fillImage(&image, 0xFFFFFFFF);

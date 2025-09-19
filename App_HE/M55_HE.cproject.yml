@@ -6,6 +6,7 @@ project:
     - group: AudioApplication
       files:
         - file: ./app_main.c
+        - file: ./audio.c
         - file: ./spectrogram.c
 
     - group: ImageProcessingLibraryIntegration

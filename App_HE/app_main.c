@@ -9,15 +9,14 @@
 #include "disp.h"
 #include "spectrogram.h"
 
+#include "audio.h"
 
-void app_audio_thread(void *arg) {
-  printf("Audio thread started\n");
-  for (;;) {
-    osDelay(1000);
-  }
-}
+osThreadId_t tid_main = NULL;
 
 void app_main_thread(void *arg) {
+  configure_display_and_2d();
+  
+
   printf("Main thread started\n");
 
   for (;;) {
@@ -40,10 +39,9 @@ int app_main(void) {
   const osThreadAttr_t audioAttr = {.stack_size = 4096,
                                     .priority = osPriorityRealtime};
   osKernelInitialize();
-  osThreadNew(app_main_thread, NULL, &mainAttr);
-  osThreadNew(app_audio_thread, NULL, &audioAttr);
+  tid_main = osThreadNew(app_main_thread, NULL, &mainAttr);
+  tid_audio_capture = osThreadNew(app_audio_thread, NULL, &audioAttr);
 
-  configure_display_and_2d();
   init_spectrogram();
 
   osKernelStart();
