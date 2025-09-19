@@ -1,17 +1,22 @@
 #include "RTE_Components.h"
+#include "dave_driver.h"
 #include CMSIS_device_header
 
 #include "arm_math_types.h"
-#include "image.h"
-#include <stdio.h>
-#include "spectrogram.h"
 #include "disp.h"
+#include "image.h"
+#include "spectrogram.h"
+#include <stdio.h>
+
+#include "aipl_dave2d.h"
 
 #define ROTATE_180
 
 #define NB_BIN 32
 static float32_t bin[NB_BIN];
-static aipl_image_t image;
+
+// Gradient
+uint32_t grad_1x256[256];
 
 void updateBins() {
   for (int i = 0; i < NB_BIN; i++) {
@@ -19,116 +24,83 @@ void updateBins() {
   }
 
   bin[NB_BIN >> 1] = 0.6f;
-  bin[(NB_BIN >> 1) + 1] = 0.7f;
+  bin[(NB_BIN >> 1) + 1] = 0.9f;
   bin[(NB_BIN >> 1) - 1] = 0.1f;
 }
 
-void fillRectangle(aipl_image_t *image, int32_t x, int32_t y, int32_t w,
-                   int32_t h, uint32_t color) {
+void drawBins(d2_device *handle) {
 
-  uint32_t strideA = 1;
-  uint32_t strideB = image->pitch;
-  uint32_t width = image->width;
-  uint32_t height = image->height;
-  if ((x + w) >= image->width)
-    w = image->width - x - 1;
-  if ((y + h) >= image->height)
-    h = image->height - y - 1;
+  const int BIN_WIDTH = MY_DISP_VER_RES / (NB_BIN + 1);
+  for (int i = 0; i < NB_BIN; i++) {
+    int h = (int)(bin[i] * MY_DISP_HOR_RES);
+    if (h > MY_DISP_HOR_RES)
+      h = MY_DISP_HOR_RES;
+    if (h == 0)
+      continue;
 
-  if (x < 0) {
-    w = w + x;
-    x = 0;
+    // d2_setfillmode(handle, d2_fm_color);
+    // d2_setcolor(handle, 0,0x00FF0000);
+
+    d2_settexturemapping(
+        handle, D2_FIX4(0),
+        D2_FIX4((i)*BIN_WIDTH), // screen position for (u0,v0)
+        0 << 16, 0 << 16,   // u0, v0 (start)
+        0, 0,   
+        (256 << 16) / MY_DISP_HOR_RES,0  
+    );
+
+    d2_renderquad(handle, D2_FIX4(0), D2_FIX4((i)*BIN_WIDTH), D2_FIX4(h),
+                  D2_FIX4((i)*BIN_WIDTH), D2_FIX4(h),
+                  D2_FIX4((i + 1) * BIN_WIDTH), D2_FIX4(0),
+                  D2_FIX4((i + 1) * BIN_WIDTH), 0);
   }
+}
 
-  if (y < 0) {
-    h = h + y;
-    y = 0;
-  }
+int init_spectrogram() {
 
-  if (w <= 0)
-    return;
-
-  if (h <= 0)
-    return;
-
-#if defined(ROTATE_180)
-  y = height - y - h;
-  x = width - x - w;
-#endif
-
-  if (image->format == AIPL_COLOR_ARGB8888) {
-    uint32_t *p = (uint32_t *)image->data;
-    for (uint32_t j = 0; j < h; j++) {
-      for (uint32_t i = 0; i < w; i++) {
-        p[(x + i) * strideA + (y + j) * strideB] = color; // ARGB
-      }
+  for (int i = 0; i < 256; i++) {
+    if (i < 128) {
+      grad_1x256[i] = 0xFF00FF00;
+    } else if (i < 192) {
+      grad_1x256[i] = 0xFFFFFF00;
+    } else {
+      grad_1x256[i] = 0xFFFF0000;
     }
-  } else {
-    printf("Unsupported image format %d\n", image->format);
   }
-}
-
-void drawBins(aipl_image_t *image) {
-  if (image->format == AIPL_COLOR_ARGB8888) {
-    for (uint32_t i = 0; i < NB_BIN; i++) {
-      uint32_t binHeight = (uint32_t)(bin[i] * (float32_t)image->height);
-      if (binHeight > image->height) {
-        binHeight = image->height;
-      }
-      fillRectangle(image, i * (image->width / NB_BIN),
-                    image->height - binHeight, (image->width / NB_BIN) - 1,
-                    binHeight, 0xFF00FF00); // Green color
-    }
-  } else {
-    printf("Unsupported image format %d\n", image->format);
-  }
-}
-
-void fillImage(aipl_image_t *image, uint32_t color) {
-  if (image->format == AIPL_COLOR_ARGB8888) {
-    uint32_t *p = (uint32_t *)image->data;
-    for (uint32_t y = 0; y < image->height; y++) {
-      for (uint32_t x = 0; x < image->width; x++) {
-        p[x + y * (image->pitch)] = color; // ARGB
-      }
-    }
-  } else {
-    printf("Unsupported image format %d\n", image->format);
-  }
-}
-
-int init_spectrogram()
-{
-
-  aipl_error_t aipl_ret = AIPL_ERR_OK;
-
-  aipl_ret = aipl_image_create(&image, MY_DISP_HOR_RES, MY_DISP_HOR_RES,
-                               MY_DISP_VER_RES, AIPL_COLOR_ARGB8888);
-
-  if (aipl_ret != AIPL_ERR_OK) {
-    printf("Error: image aipl_image_create() failed %d\n", aipl_ret);
-    return -1;
-}
-
   return 0;
 }
 
-void free_spectrogram()
-{
-   aipl_image_destroy(&image);
-}
+void free_spectrogram() {}
 
-void update_data()
-{
-   updateBins();
-}
+void update_data() { updateBins(); }
 
-void display_data()
-{
-    fillImage(&image, 0xFFFFFFFF);
-    drawBins(&image);
+void display_data() {
+  // fillImage(&image, 0xFFFFFFFF);
 
-    aipl_dave2d_prepare();
-    aipl_image_draw(0, 0, &image);
-    aipl_dave2d_render();
+  aipl_dave2d_prepare();
+  // aipl_image_draw(0, 0, &image);
+
+  d2_device *handle = aipl_dave2d_handle();
+
+  // d2_setblendmode(handle, d2_bm_alpha, d2_bm_one_minus_alpha);
+  // d2_setalphablendmode(handle, d2_bm_one, d2_bm_one_minus_alpha);
+
+  d2_clear(handle, 0xFFFFFFFF);
+  // d2_setfillmode(handle, d2_fm_color);
+  d2_selectrendermode(handle, d2_rm_solid);
+  // d2_setcolor(handle, 0, 0xFFFF0000);
+
+  d2_settexture(handle, grad_1x256, /*pitch*/ 1, /*width*/ 1, /*height*/ 256,
+                d2_mode_argb8888);
+
+  // 2) Texture mode: bilinear filter (default includes filter); add wrap flags
+  // if you ever need repeating.
+  d2_settexturemode(handle, d2_tm_filter);
+
+  // 3) Use textures as the fill source
+  d2_setfillmode(handle, d2_fm_texture);
+
+  drawBins(handle);
+
+  aipl_dave2d_render();
 }
