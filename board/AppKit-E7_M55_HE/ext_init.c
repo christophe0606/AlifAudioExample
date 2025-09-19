@@ -42,6 +42,7 @@ static ARM_DRIVER_GPIO *IO_Driver_TOUCH_RST = &ARM_Driver_GPIO_(RTE_GT911_TOUCH_
 extern ARM_DRIVER_GPIO  ARM_Driver_GPIO_(BOARD_LCD_RESET_GPIO_PORT);
 static ARM_DRIVER_GPIO *IO_Driver_LCD_RST = &ARM_Driver_GPIO_(BOARD_LCD_RESET_GPIO_PORT);
 
+
 /*
   Initialize reset and power I/Os to the external devices.
 */
@@ -66,4 +67,5 @@ void ext_init(void)
     IO_Driver_LCD_RST->PowerControl(RTE_ILI9488_PANEL_BL_LED_PIN_NO, ARM_POWER_FULL);
     IO_Driver_LCD_RST->SetValue(RTE_ILI9488_PANEL_BL_LED_PIN_NO, GPIO_PIN_OUTPUT_STATE_LOW);
     IO_Driver_LCD_RST->SetDirection(RTE_ILI9488_PANEL_BL_LED_PIN_NO, GPIO_PIN_DIRECTION_OUTPUT);
+
 }

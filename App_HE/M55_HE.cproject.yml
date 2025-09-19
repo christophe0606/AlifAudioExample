@@ -3,16 +3,43 @@ project:
   device: :M55_HE
 
   groups:
-    - group: Source Files
+    - group: AudioApplication
       files:
         - file: ./app_main.c
+        - file: ./spectrogram.c
+
+    - group: ImageProcessingLibraryIntegration
+      files:
+        - file: aipl/video_alloc.c
+        - file: aipl/cpu_cache.c
+        - file: graphics/image.c
+        - file: display/disp.c
+
+  add-path:
+    - .
+    - aipl
+    - graphics
+    - display
 
   # List components to use for your application.
   # A software component is a re-usable unit that may be configurable.
   components:
     - component: CMSIS:DSP&Source
+      misc:
+        - for-compiler: AC6
+          C-CPP:
+            - -Wno-nan-infinity-disabled
     - component: CMSIS:OS Tick:SysTick
     - component: CMSIS:RTOS2:Keil RTX5&Source
+    - component: Graphics:AIPL:Basic
+    - component: Graphics:AIPL:Color conversion
+    - component: Graphics:AIPL:Color correction
+    - component: Graphics:AIPL:Demosaic
+    - component: Graphics:AIPL:Essential
+    - component: Graphics:Acceleration:Dave2d
+    - component: Graphics:DAVE2D:Layer0Lib
+    - component: Graphics:DAVE2D:Layer1
+    - component: Graphics:DAVE2D:Layer2
 
   layers:
     - layer: $Board-Layer$
@@ -24,16 +51,20 @@ project:
       - elf
       - hex
       - map
-  
+
   connections:
     - connect: Board Layer with Audio interface
       consumes:
         - CMSIS_VSTREAM_AUDIO_IN
       provides:
         - CMSIS-RTOS2
-        
+
   packs:
     - pack: ARM::CMSIS@^6.2.0
     - pack: ARM::CMSIS-DSP@^1.16.0
     - pack: ARM::CMSIS-RTX@^5.9.0
-
+    - pack: ARM::CMSIS-Compiler
+    - pack: ARM::ethos-u-core-driver
+    - pack: AlifSemiconductor::AIPL
+    - pack: AlifSemiconductor::Dave2DDriver
+    - pack: AlifSemiconductor::Ensemble

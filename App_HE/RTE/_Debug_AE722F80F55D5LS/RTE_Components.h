@@ -70,6 +70,9 @@
 #define RTE_Drivers_MIPI_DSI               /* Driver MIPI DSI */
 /* AlifSemiconductor::Device:SOC Peripherals:PINCONF@2.0.0 */
 #define RTE_Drivers_LL_PINCONF              /* Driver PinPAD and PinMux */
+/* AlifSemiconductor::Graphics:Acceleration:Dave2d@1.0.0 */
+/*! \brief enable Dave2D acceleration */
+#define AIPL_DAVE2D_ACCELERATION
 
 
 #endif /* RTE_COMPONENTS_H */
