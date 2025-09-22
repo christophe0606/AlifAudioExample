@@ -20,6 +20,7 @@ extern "C" {
  *********************/
 #define MY_DISP_HOR_RES      (RTE_PANEL_HACTIVE_TIME)
 #define MY_DISP_VER_RES      (RTE_PANEL_VACTIVE_LINE)
+#define LCD_REFRESH_FLAG 0x1
 
 /**********************
  *      TYPEDEFS

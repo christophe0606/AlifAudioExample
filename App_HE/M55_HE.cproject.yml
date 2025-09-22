@@ -13,7 +13,6 @@ project:
       files:
         - file: aipl/video_alloc.c
         - file: aipl/cpu_cache.c
-        - file: graphics/image.c
         - file: display/disp.c
 
   add-path:

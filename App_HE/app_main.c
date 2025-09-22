@@ -19,10 +19,9 @@ void app_main_thread(void *arg) {
 
   printf("Main thread started\n");
 
+
   for (;;) {
-    update_data();
     display_data();
-    // osDelay(40);
   }
 
 endMain:

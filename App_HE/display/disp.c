@@ -14,6 +14,11 @@
 #include CMSIS_device_header
 #include <RTE_Device.h>
 #include "Driver_CDC200.h" // Display driver
+#include "sys_utils.h"
+
+#include "cmsis_os2.h"
+
+extern osThreadId_t tid_main;
 
 // DAVE
 #include "aipl_dave2d.h"
@@ -113,12 +118,20 @@ int display_init(void)
         return ret;
     }
 
+    ret = CDCdrv->Control(CDC200_SCANLINE0_EVENT, ENABLE);
+    if(ret != ARM_DRIVER_OK){
+        printf("\r\n Error: CDC controller configuration failed\n");
+        return ret;
+    }
+
     /* configure CDC controller */
     ret = CDCdrv->Control(CDC200_CONFIGURE_DISPLAY, (uint32_t)disp_active_buffer());
     if(ret != ARM_DRIVER_OK){
         printf("\r\n Error: CDC controller configuration failed\n");
         return ret;
     }
+
+    
 
     /* Start CDC */
     ret = CDCdrv->Start();
@@ -160,6 +173,11 @@ static void disp_callback(uint32_t event)
         // Transfer Error: Received Hardware error.
         __BKPT(0);
     }
+    if (event & ARM_CDC_SCANLINE0_EVENT)
+    {
+        osThreadFlagsSet(tid_main, LCD_REFRESH_FLAG);
+    }
+    
 }
 
 
