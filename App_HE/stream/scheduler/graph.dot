@@ -1,0 +1,203 @@
+
+
+
+
+digraph structs {
+    bgcolor = "white"
+    node [shape=plaintext,color="black",fontcolor="black",fontname="Times-Roman"]
+    rankdir=LR
+    edge [arrowsize="0.5",color="black",fontcolor="black",fontname="Times-Roman"]
+
+
+audioSource [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">audioSource<BR/>(VStreamAudioSource)</FONT></TD>
+  </TR>
+</TABLE>>];
+
+fftLeft [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">fftLeft<BR/>(CFFT)</FONT></TD>
+  </TR>
+</TABLE>>];
+
+fftRight [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">fftRight<BR/>(CFFT)</FONT></TD>
+  </TR>
+</TABLE>>];
+
+
+spectrogramLeft [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD PORT="i"><FONT POINT-SIZE="12.0" COLOR="black">i</FONT></TD>
+    <TD ALIGN="CENTER" ROWSPAN="2"><FONT COLOR="black" POINT-SIZE="14.0">spectrogramLeft<BR/>(Spectrogram)</FONT></TD>
+    <TD PORT="0"><FONT POINT-SIZE="12.0" COLOR="black">ev0</FONT></TD>
+  </TR>
+<TR>
+ 
+<TD></TD>
+ 
+<TD></TD></TR>
+
+</TABLE>>];
+
+
+spectrogramRight [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD PORT="i"><FONT POINT-SIZE="12.0" COLOR="black">i</FONT></TD>
+    <TD ALIGN="CENTER" ROWSPAN="2"><FONT COLOR="black" POINT-SIZE="14.0">spectrogramRight<BR/>(Spectrogram)</FONT></TD>
+    <TD PORT="0"><FONT POINT-SIZE="12.0" COLOR="black">ev0</FONT></TD>
+  </TR>
+<TR>
+ 
+<TD></TD>
+ 
+<TD></TD></TR>
+
+</TABLE>>];
+
+src_f32 [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">src_f32<BR/>(Convert)</FONT></TD>
+  </TR>
+</TABLE>>];
+
+
+stereoToMono [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD PORT="i"><FONT POINT-SIZE="12.0" COLOR="black">i</FONT></TD>
+    <TD ALIGN="CENTER" ROWSPAN="2"><FONT COLOR="black" POINT-SIZE="14.0">stereoToMono<BR/>(StereoToMono)</FONT></TD>
+    <TD PORT="l"><FONT POINT-SIZE="12.0" COLOR="black">l</FONT></TD>
+  </TR>
+<TR>
+ 
+<TD></TD>
+<TD PORT="r"><FONT POINT-SIZE="12.0" COLOR="black">r</FONT></TD>
+</TR>
+
+</TABLE>>];
+
+toComplexLeft [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">toComplexLeft<BR/>(RealToComplex)</FONT></TD>
+  </TR>
+</TABLE>>];
+
+toComplexRight [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">toComplexRight<BR/>(RealToComplex)</FONT></TD>
+  </TR>
+</TABLE>>];
+
+winLeft [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">winLeft<BR/>(Hanning)</FONT></TD>
+  </TR>
+</TABLE>>];
+
+winRight [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">winRight<BR/>(Hanning)</FONT></TD>
+  </TR>
+</TABLE>>];
+
+
+display [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD PORT="0"><FONT POINT-SIZE="12.0" COLOR="black">ev0</FONT></TD>
+    <TD ALIGN="CENTER" ROWSPAN="2"><FONT COLOR="black" POINT-SIZE="14.0">display<BR/>(Display)</FONT></TD>
+    <TD></TD>
+  </TR>
+<TR>
+<TD PORT="1"><FONT POINT-SIZE="12.0" COLOR="black">ev1</FONT></TD>
+
+ 
+<TD></TD></TR>
+
+</TABLE>>];
+
+
+
+audioSource:i -> src_f32:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<q15(1024)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+</TD></TR></TABLE>>]
+
+src_f32:i -> stereoToMono:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(1024)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+</TD></TR></TABLE>>]
+
+stereoToMono:l -> winLeft:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>]
+
+stereoToMono:r -> winRight:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>]
+
+winLeft:i -> toComplexLeft:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>]
+
+winRight:i -> toComplexRight:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>]
+
+toComplexLeft:i -> fftLeft:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(1024)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+</TD></TR></TABLE>>]
+
+toComplexRight:i -> fftRight:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(1024)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+</TD></TR></TABLE>>]
+
+fftLeft:i -> spectrogramLeft:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(1024)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+</TD></TR></TABLE>>]
+
+fftRight:i -> spectrogramRight:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(1024)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+</TD></TR></TABLE>>]
+
+
+
+spectrogramLeft:0 -> display:0 [style="dashed",color="black",fontsize="12.0",fontcolor="black",label=<>
+
+]
+spectrogramRight:0 -> display:1 [style="dashed",color="black",fontsize="12.0",fontcolor="black",label=<>
+
+]
+
+}

@@ -1,0 +1,13 @@
+from cmsis_stream.cg.scheduler import *
+
+
+class CFFT(GenericNode):
+    def __init__(self,name,theType,outLength):
+        GenericNode.__init__(self,name)
+        self.addInput("i",theType,2*outLength)
+        self.addOutput("o",theType,2*outLength)
+
+    @property
+    def typeName(self):
+        """The name of the C++ class implementing this node"""
+        return "CFFT"

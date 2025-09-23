@@ -5,9 +5,8 @@ project:
   groups:
     - group: AudioApplication
       files:
-        - file: ./app_main.c
-        - file: ./audio.c
-        - file: ./spectrogram.c
+        - file: ./app_main.cpp
+        - file: ./rendering.cpp
 
     - group: ImageProcessingLibraryIntegration
       files:
@@ -15,11 +14,20 @@ project:
         - file: aipl/cpu_cache.c
         - file: display/disp.c
 
+    - group: Stream
+      files:
+        - file: stream/cpp/cg_queue.cpp
+        - file: stream/scheduler/scheduler.cpp
+       
+
   add-path:
     - .
     - aipl
     - graphics
     - display
+    - stream/cpp 
+    - stream
+    - stream/scheduler
 
   # List components to use for your application.
   # A software component is a re-usable unit that may be configurable.

@@ -1,0 +1,34 @@
+{
+  "VStreamAudioSource<q15_t,1024>": {
+    "isTemplate": true,
+    "selectors": []
+  },
+  "CFFT<float,1024,float,1024>": {
+    "isTemplate": true,
+    "selectors": []
+  },
+  "Spectrogram<float,1024>": {
+    "isTemplate": true,
+    "selectors": []
+  },
+  "Convert<q15_t,1024,float,1024>": {
+    "isTemplate": true,
+    "selectors": []
+  },
+  "StereoToMono<float,1024,float,512,float,512>": {
+    "isTemplate": true,
+    "selectors": []
+  },
+  "RealToComplex<float,512,float,1024>": {
+    "isTemplate": true,
+    "selectors": []
+  },
+  "Hanning<float,512,float,512>": {
+    "isTemplate": true,
+    "selectors": []
+  },
+  "Display": {
+    "isTemplate": false,
+    "selectors": []
+  }
+}

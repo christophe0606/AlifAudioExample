@@ -18,7 +18,7 @@
 
 #include "cmsis_os2.h"
 
-extern osThreadId_t tid_main;
+extern osThreadId_t tid_display;
 
 // DAVE
 #include "aipl_dave2d.h"
@@ -92,6 +92,9 @@ static uint32_t switch_times[NUM_BUFFERS] = { 0, 0 };
 
 extern ARM_DRIVER_CDC200 Driver_CDC200;
 static ARM_DRIVER_CDC200 *CDCdrv = &Driver_CDC200;
+
+volatile int was_changed=0;
+
 
 /**********************
  *      MACROS
@@ -175,7 +178,12 @@ static void disp_callback(uint32_t event)
     }
     if (event & ARM_CDC_SCANLINE0_EVENT)
     {
-        osThreadFlagsSet(tid_main, LCD_REFRESH_FLAG);
+        if (was_changed) 
+        {
+            was_changed=0;
+            disp_next_frame();
+            osThreadFlagsSet(tid_display, LCD_REFRESH_FLAG);
+        }
     }
     
 }

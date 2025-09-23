@@ -1,0 +1,14 @@
+{
+  "audioSource": 0,
+  "fftLeft": 1,
+  "fftRight": 2,
+  "spectrogramLeft": 3,
+  "spectrogramRight": 4,
+  "src_f32": 5,
+  "stereoToMono": 6,
+  "toComplexLeft": 7,
+  "toComplexRight": 8,
+  "winLeft": 9,
+  "winRight": 10,
+  "display": 11
+}
