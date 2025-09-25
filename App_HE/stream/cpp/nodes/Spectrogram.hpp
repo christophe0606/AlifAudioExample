@@ -1,15 +1,19 @@
 #pragma once
 
+extern "C"
+{
 #include "config.h"
+}
 
 #include "EventQueue.hpp"
-#include "StreamNode.hpp"
 #include "GenericNodes.hpp"
+#include "StreamNode.hpp"
 #include "arm_math_types.h"
 #include "cg_enums.h"
 #include "dsp/basic_math_functions.h"
 #include "dsp/complex_math_functions.h"
 #include <cstring>
+
 
 using namespace arm_cmsis_stream;
 
@@ -24,7 +28,7 @@ class Spectrogram<float32_t, inputSamples>
     Spectrogram(FIFOBase<float32_t> &src)
         : GenericSink<float32_t, inputSamples>(src)
     {
-        mag = new float32_t[inputSamples / 2];
+        mag = new float32_t[inputSamples >> 2];
     };
 
     ~Spectrogram()
@@ -44,18 +48,20 @@ class Spectrogram<float32_t, inputSamples>
 
     int run() final
     {
+        const int magSamples = inputSamples >> 2;
         float32_t *in = this->getReadBuffer();
 
-        arm_cmplx_mag_f32(in, mag, inputSamples >> 1);
+        //We keep half of the complex FFT spectrum
+        arm_cmplx_mag_f32(in, mag, magSamples);
 
-        arm_scale_f32(mag, 1.0f / (inputSamples >> 5), mag, inputSamples >> 1);
+        //arm_scale_f32(mag, 1.0f / magSamples, mag, magSamples);
 
-        float di = 1.0 * NB_BINS / ((float)inputSamples / 2);
+        float di = 1.0 * NB_BINS / ((float)magSamples);
         // float scale = 1.0f * FFT_SIZE / 2 / NB_BIN;
         float k = 0;
         memset(bins, 0, sizeof(bins));
 
-        for (int i = 0; i < inputSamples / 2; i++)
+        for (int i = 0; i < magSamples; i++)
         {
             if (k < NB_BINS)
                 bins[(int)k] += mag[i];
@@ -70,15 +76,25 @@ class Spectrogram<float32_t, inputSamples>
             if (bins[i] < 0.0f)
                 bins[i] = 0.0f;
         }
+#if 1
+        UniquePtr<float> tensorData(NB_BINS);
+        memcpy(tensorData.get(), bins, sizeof(bins));
+        
 
-        UniquePtr<const float> tensorData(bins);
+        TensorPtr<float> t = TensorPtr<float>::create_with((uint8_t)1,
+                                                           cg_tensor_dims_t{NB_BINS},
+                                                           std::move(tensorData));
+        bool status = ev0.sendAsync(kNormalPriority, kValue, std::move(t)); // Send the event to the subscribed nodes
 
-        TensorPtr<const float> t = TensorPtr<const float>::create_with((uint8_t)1,
-                                                                           cg_tensor_dims_t{NB_BINS},
-                                                                           std::move(tensorData));
+        if (!status)
+        {
+            ERROR_PRINT("Failed to send spectrogram event\n");
+        }
 
-        ev0.sendAsync(kNormalPriority, kValue, std::move(t)); // Send the event to the subscribed nodes
-
+#else
+        ev0.sendSync(kNormalPriority, kValue, 1.0); // Send the event to the subscribed nodes
+#endif
+        
         return (CG_SUCCESS);
     };
 

@@ -22,15 +22,15 @@ public:
     CFFT(FIFOBase<float32_t> &src,FIFOBase<float32_t> &dst):
     GenericNode<float32_t,inputSamples,float32_t,inputSamples>(src,dst){
         if constexpr (inputSamples==256)
-            arm_cfft_init_256_f32(&varInstCfftF32);
+            arm_cfft_init_128_f32(&varInstCfftF32);
         else if constexpr (inputSamples==512)
-            arm_cfft_init_512_f32(&varInstCfftF32);
+            arm_cfft_init_256_f32(&varInstCfftF32);
         else if constexpr (inputSamples==1024)
-            arm_cfft_init_1024_f32(&varInstCfftF32);
+            arm_cfft_init_512_f32(&varInstCfftF32);
         else if constexpr (inputSamples==2048)
-            arm_cfft_init_2048_f32(&varInstCfftF32);
+            arm_cfft_init_1024_f32(&varInstCfftF32);
         else if constexpr (inputSamples==4096)
-            arm_cfft_init_4096_f32(&varInstCfftF32);
+            arm_cfft_init_2048_f32(&varInstCfftF32);
         else
             static_assert("Unsupported FFT size");
     };

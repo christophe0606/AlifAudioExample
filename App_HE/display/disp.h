@@ -22,7 +22,7 @@ extern "C" {
 #define MY_DISP_VER_RES      (RTE_PANEL_VACTIVE_LINE)
 #define LCD_REFRESH_FLAG 0x1
 
-extern volatile int was_changed;
+extern volatile int lcd_content_was_changed;
 
 /**********************
  *      TYPEDEFS

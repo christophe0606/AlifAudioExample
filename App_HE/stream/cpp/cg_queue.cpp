@@ -62,15 +62,13 @@ bool MyQueue::push(arm_cmsis_stream::Message &&event)
             nb_elems++;
             ok = true;
         }
-        CG_EXIT_CRITICAL_SECTION(queue_mutex, error);
     }
-    if (ok)
+    CG_EXIT_CRITICAL_SECTION(queue_mutex, error);
+    if (cg_eventThread != nullptr)
     {
-        if (cg_eventThread != nullptr)
-        {
-            osThreadFlagsSet(cg_eventThread, MY_QUEUE_NEW_EVENT_FLAG);
-        }
+        osThreadFlagsSet(cg_eventThread, MY_QUEUE_NEW_EVENT_FLAG);
     }
+    
     return ok;
 }
 
@@ -99,9 +97,9 @@ void MyQueue::clear()
             }
             nb_elems--;
             msg = Message(); // Reset the message
-        }
-        CG_EXIT_CRITICAL_SECTION(queue_mutex, error);
+        } 
     }
+    CG_EXIT_CRITICAL_SECTION(queue_mutex, error);
 }
 
 void MyQueue::end() noexcept
@@ -137,8 +135,8 @@ void MyQueue::execute()
                     nb_elems--;
                     messageWasReceived = true;
                 }
-                CG_EXIT_CRITICAL_SECTION(queue_mutex, error);
             }
+            CG_EXIT_CRITICAL_SECTION(queue_mutex, error);
 
             // Process event with no lock held
             if (messageWasReceived)
@@ -148,12 +146,16 @@ void MyQueue::execute()
                     LocalDestination &local = std::get<LocalDestination>(msg.destination);
                     local.dst->processEvent(local.dstPort, std::move(msg.event));
                 }
-                else
+                else if (std::holds_alternative<DistantDestination>(msg.destination))
                 {
                     DistantDestination &dist = std::get<DistantDestination>(msg.destination);
                     this->callHandler(dist.src_node_id, std::move(msg.event));
                 }
             }
+        }
+        if (this->mustEnd())
+        {
+            return;
         }
         // If new event was pushed and missed with the
         // empty test

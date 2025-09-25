@@ -27,18 +27,17 @@
 #ifndef CUSTOM_H_
 #define CUSTOM_H_
 
-
 extern "C"
 {
 #include "RTE_Components.h"
 #include CMSIS_device_header
 #include "cmsis_os2.h"
+#include "config.h"
 }
-
 
 class CMSISMutex
 {
-public:
+  public:
     CMSISMutex()
     {
         mutex_id = osMutexNew(NULL);
@@ -58,20 +57,21 @@ public:
         return mutex_id;
     }
 
-protected:
+  protected:
     osMutexId_t mutex_id;
 };
 
 class CMSISLock
 {
-public:
-    CMSISLock(CMSISMutex &mutex) : mutex(mutex)
+  public:
+    CMSISLock(CMSISMutex &mutex)
+        : mutex(mutex)
     {
     }
 
     osStatus_t acquire()
     {
-        error = osMutexAcquire(mutex.id(), 0);
+        error = osMutexAcquire(mutex.id(), osWaitForever);
         return error;
     }
 
@@ -88,7 +88,7 @@ public:
         return error;
     }
 
-protected:
+  protected:
     CMSISMutex &mutex;
     osStatus_t error;
 };
@@ -122,5 +122,10 @@ protected:
 
 // Queue implementation for events
 #include "cg_queue.hpp"
+
+
+
+// Because memory optimization is enabled
+#define CG_BEFORE_BUFFER __ALIGNED(16)
 
 #endif

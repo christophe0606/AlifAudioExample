@@ -7,3 +7,4 @@ from .RealToComplex import *
 from .Convert import *
 from .Display import *
 from .Hanning import *
+from .DebugSource import *

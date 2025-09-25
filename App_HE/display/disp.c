@@ -25,6 +25,8 @@ extern osThreadId_t tid_display;
 #include "dave_cfg.h"
 #include "dave_d0lib.h"
 
+#include "config.h"
+
 /*********************
  *      DEFINES
  *********************/
@@ -93,7 +95,7 @@ static uint32_t switch_times[NUM_BUFFERS] = { 0, 0 };
 extern ARM_DRIVER_CDC200 Driver_CDC200;
 static ARM_DRIVER_CDC200 *CDCdrv = &Driver_CDC200;
 
-volatile int was_changed=0;
+volatile int lcd_content_was_changed=0;
 
 
 /**********************
@@ -110,27 +112,29 @@ int display_init(void)
     /* Initialize CDC driver */
     int ret = CDCdrv->Initialize(disp_callback);
     if(ret != ARM_DRIVER_OK){
-        printf("\r\n Error: CDC init failed\n");
+        ERROR_PRINT("CDC init failed\n");
         return ret;
     }
 
     /* Power control CDC */
     ret = CDCdrv->PowerControl(ARM_POWER_FULL);
     if(ret != ARM_DRIVER_OK){
-        printf("\r\n Error: CDC Power up failed\n");
+        ERROR_PRINT("CDC Power up failed\n");
         return ret;
     }
 
+    
     ret = CDCdrv->Control(CDC200_SCANLINE0_EVENT, ENABLE);
     if(ret != ARM_DRIVER_OK){
-        printf("\r\n Error: CDC controller configuration failed\n");
+        ERROR_PRINT("CDC controller configuration failed\n");
         return ret;
     }
+    
 
     /* configure CDC controller */
     ret = CDCdrv->Control(CDC200_CONFIGURE_DISPLAY, (uint32_t)disp_active_buffer());
     if(ret != ARM_DRIVER_OK){
-        printf("\r\n Error: CDC controller configuration failed\n");
+        ERROR_PRINT("CDC controller configuration failed\n");
         return ret;
     }
 
@@ -139,17 +143,20 @@ int display_init(void)
     /* Start CDC */
     ret = CDCdrv->Start();
     if(ret != ARM_DRIVER_OK){
-        printf("\r\n Error: CDC Start failed\n");
+        ERROR_PRINT("CDC Start failed\n");
         return ret;
     }
 
     return ret;
 }
 
-void disp_next_frame(void)
+void switch_to_next_frame(void)
 {
     current_buffer = (current_buffer + 1) % NUM_BUFFERS;
+}
 
+void disp_next_frame(void)
+{
     CDCdrv->Control(CDC200_FRAMEBUF_UPDATE, (uint32_t)buffers[current_buffer]);
 }
 
@@ -178,12 +185,14 @@ static void disp_callback(uint32_t event)
     }
     if (event & ARM_CDC_SCANLINE0_EVENT)
     {
-        if (was_changed) 
+        if (lcd_content_was_changed) 
         {
-            was_changed=0;
-            disp_next_frame();
-            osThreadFlagsSet(tid_display, LCD_REFRESH_FLAG);
+            lcd_content_was_changed=0;
+            switch_to_next_frame();
         }
+        disp_next_frame();
+        if (tid_display != NULL)
+            osThreadFlagsSet(tid_display, LCD_REFRESH_FLAG);
     }
     
 }
@@ -197,13 +206,13 @@ void configure_display_and_2d() {
    * -----------------------*/
   if (!d0_initheapmanager(d0_heap, sizeof(d0_heap), d0_mm_fixed_range, NULL, 0,
                           0, 0, d0_ma_unified)) {
-    printf("\r\nError: Heap manager initialization failed\n");
+    ERROR_PRINT("\r\nError: Heap manager initialization failed\n");
   }
 #endif
 
   // Initialize D/AVE2D
   if (aipl_dave2d_init() != D2_OK) {
-    printf("\r\nError: D/AVE2D initialization falied\n");
+    ERROR_PRINT("\r\nError: D/AVE2D initialization falied\n");
     __BKPT(0);
   }
 

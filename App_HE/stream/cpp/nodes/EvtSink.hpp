@@ -3,7 +3,10 @@
 #include "StreamNode.hpp"
 #include "GenericNodes.hpp"
 
-
+extern "C"
+{
+    #include "config.h"
+}
 using namespace arm_cmsis_stream;
 
 class EvtSink: public StreamNode
@@ -23,7 +26,7 @@ public:
         
         
         // Display the event received from another node
-        printf("Sink received event on port %d : evt id %d val = %d\n",dstPort ,evt.event_id ,eventCount);
+        DEBUG_PRINT("Sink received event on port %d : evt id %d val = %d\n",dstPort ,evt.event_id ,eventCount);
     }
 
 protected:

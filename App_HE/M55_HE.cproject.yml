@@ -6,7 +6,6 @@ project:
     - group: AudioApplication
       files:
         - file: ./app_main.cpp
-        - file: ./rendering.cpp
 
     - group: ImageProcessingLibraryIntegration
       files:

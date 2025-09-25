@@ -1,5 +1,10 @@
 #pragma once
 
+extern "C"
+{
+    #include "config.h"
+}
+
 #include "StreamNode.hpp"
 #include "GenericNodes.hpp"
 
@@ -16,22 +21,22 @@ public:
     {
         
         // Display the event received from another node
-        printf("Source received event on port %d : evt id %d\n",dstPort ,evt.event_id);
+        DEBUG_PRINT("Source received event on port %d : evt id %d\n",dstPort ,evt.event_id);
         if (evt.contains<TensorPtr<float>>())
         {
             auto t = evt.get<TensorPtr<float>>();
             t.lock([](CG_MUTEX_ERROR_TYPE error,bool isShared, Tensor<float> &tensor) {
                 if (CG_MUTEX_HAS_ERROR(error))
                 {
-                    printf("Error locking tensr mutex\n");
+                    ERROR_PRINT("Error locking tensor mutex\n");
                     return;
                 }
-                printf("TENSOR with %d dimensions: ", tensor.nb_dims);
+                DEBUG_PRINT("TENSOR with %d dimensions: ", tensor.nb_dims);
                 for (uint8_t i = 0; i < tensor.nb_dims; ++i)
                 {
-                    printf("%d ", tensor.dims[i]);
+                    DEBUG_PRINT("%d ", tensor.dims[i]);
                 }
-                printf("\n");
+                DEBUG_PRINT("\n");
             });
         }
 
@@ -41,15 +46,15 @@ public:
             t.lock_shared([](CG_MUTEX_ERROR_TYPE error, const Tensor<const float> &tensor) {
                 if (CG_MUTEX_HAS_ERROR(error))
                 {
-                    printf("Error locking tensr mutex\n");
+                    ERROR_PRINT("Error locking tensor mutex\n");
                     return;
                 }
-                printf("CONST TENSOR with %d dimensions: ", tensor.nb_dims);
+                DEBUG_PRINT("CONST TENSOR with %d dimensions: ", tensor.nb_dims);
                 for (uint8_t i = 0; i < tensor.nb_dims; ++i)
                 {
-                    printf("%d ", tensor.dims[i]);
+                    DEBUG_PRINT("%d ", tensor.dims[i]);
                 }
-                printf("\n");
+                DEBUG_PRINT("\n");
             });
         }
 

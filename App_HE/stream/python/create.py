@@ -9,6 +9,10 @@ AUDIO_BLOCK = 512
 FFT_SIZE = 512 
 
 src = VStreamAudioSource("audioSource",AUDIO_BLOCK)
+
+# Debug source can be used instead to generate a sine
+# with amplitude modulation
+#src = DebugSource("audioSource",AUDIO_BLOCK)
 src_f32 = Convert("src_f32",CType(Q15),CType(F32),2*AUDIO_BLOCK)
 
 win_left = Hanning("winLeft",CType(F32),AUDIO_BLOCK)

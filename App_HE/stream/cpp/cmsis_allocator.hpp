@@ -1,7 +1,13 @@
 #pragma once 
 
+#include "cmsis_os2.h"
 #include <cstdio>
 #include <type_traits>
+
+extern "C"
+{
+    #include "config.h"
+}
 
 extern osMemoryPoolId_t cg_eventPool;
 extern osMemoryPoolId_t cg_bufPool;
@@ -29,7 +35,7 @@ public:
     {
         if ((n == 1) && (sizeof(T) <= osMemoryPoolGetBlockSize(cg_eventPool)))
         {
-            //printf("Alloc event %d\n",sizeof(T));
+            //DEBUG_PRINT("Alloc event %d\n",sizeof(T));
             return static_cast<T *>(osMemoryPoolAlloc(cg_eventPool,0));
         }
         else
@@ -77,7 +83,7 @@ public:
     {
         if ((n == 1) && (sizeof(T) <= osMemoryPoolGetBlockSize(cg_bufPool)))
         {
-            //printf("Alloc buf %d\n",sizeof(T));
+            //DEBUG_PRINT("Alloc buf %d\n",sizeof(T));
             return static_cast<T *>(osMemoryPoolAlloc(cg_bufPool,0));
         }
         else
@@ -125,8 +131,13 @@ public:
     {
         if ((n == 1) && (sizeof(T) <= osMemoryPoolGetBlockSize(cg_mutexPool)))
         {
-            //printf("Alloc mutex %d\n",sizeof(T));
-            return static_cast<T *>(osMemoryPoolAlloc(cg_mutexPool,0));
+            void *ptr=osMemoryPoolAlloc(cg_mutexPool,0);
+            if (ptr == nullptr)
+            {
+                ERROR_PRINT("Failed to allocate mutex memory %d, nb = %d\n",sizeof(T),osMemoryPoolGetCount(cg_mutexPool));
+            }
+            
+            return static_cast<T *>(ptr);
         }
         else
         {
@@ -137,7 +148,7 @@ public:
 
     void deallocate(T *p, std::size_t n) noexcept
     {
-        osMemoryPoolFree(cg_bufPool,static_cast<void*>(p));
+        osMemoryPoolFree(cg_mutexPool,static_cast<void*>(p));
     };
 
 
