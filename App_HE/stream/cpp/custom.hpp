@@ -33,7 +33,28 @@ extern "C"
 #include CMSIS_device_header
 #include "cmsis_os2.h"
 #include "config.h"
+#include "arm_math_types.h"
 }
+
+struct cf32 {
+    float real;
+    float imag;
+};
+
+struct sf32 {
+    float left;
+    float right;
+};
+
+struct cq15 {
+    q15_t real;
+    q15_t imag;
+};
+
+struct sq15 {
+    q15_t left;
+    q15_t right;
+};
 
 class CMSISMutex
 {

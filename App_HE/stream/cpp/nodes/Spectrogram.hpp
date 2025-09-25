@@ -10,10 +10,10 @@ extern "C"
 #include "StreamNode.hpp"
 #include "arm_math_types.h"
 #include "cg_enums.h"
+#include "custom.hpp"
 #include "dsp/basic_math_functions.h"
 #include "dsp/complex_math_functions.h"
 #include <cstring>
-
 
 using namespace arm_cmsis_stream;
 
@@ -21,14 +21,14 @@ template <typename IN, int inputSize>
 class Spectrogram;
 
 template <int inputSamples>
-class Spectrogram<float32_t, inputSamples>
-    : public GenericSink<float32_t, inputSamples>
+class Spectrogram<cf32, inputSamples>
+    : public GenericSink<cf32, inputSamples>
 {
   public:
-    Spectrogram(FIFOBase<float32_t> &src)
-        : GenericSink<float32_t, inputSamples>(src)
+    Spectrogram(FIFOBase<cf32> &src)
+        : GenericSink<cf32, inputSamples>(src)
     {
-        mag = new float32_t[inputSamples >> 2];
+        mag = new float32_t[inputSamples >> 1];
     };
 
     ~Spectrogram()
@@ -48,13 +48,13 @@ class Spectrogram<float32_t, inputSamples>
 
     int run() final
     {
-        const int magSamples = inputSamples >> 2;
-        float32_t *in = this->getReadBuffer();
+        const int magSamples = inputSamples >> 1;
+        cf32 *in = this->getReadBuffer();
 
-        //We keep half of the complex FFT spectrum
-        arm_cmplx_mag_f32(in, mag, magSamples);
+        // We keep half of the complex FFT spectrum
+        arm_cmplx_mag_f32((float32_t *)in, mag, magSamples);
 
-        //arm_scale_f32(mag, 1.0f / magSamples, mag, magSamples);
+        // arm_scale_f32(mag, 1.0f / magSamples, mag, magSamples);
 
         float di = 1.0 * NB_BINS / ((float)magSamples);
         // float scale = 1.0f * FFT_SIZE / 2 / NB_BIN;
@@ -79,7 +79,6 @@ class Spectrogram<float32_t, inputSamples>
 #if 1
         UniquePtr<float> tensorData(NB_BINS);
         memcpy(tensorData.get(), bins, sizeof(bins));
-        
 
         TensorPtr<float> t = TensorPtr<float>::create_with((uint8_t)1,
                                                            cg_tensor_dims_t{NB_BINS},
@@ -94,7 +93,7 @@ class Spectrogram<float32_t, inputSamples>
 #else
         ev0.sendSync(kNormalPriority, kValue, 1.0); // Send the event to the subscribed nodes
 #endif
-        
+
         return (CG_SUCCESS);
     };
 

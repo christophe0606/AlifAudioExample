@@ -8,3 +8,4 @@ from .Convert import *
 from .Display import *
 from .Hanning import *
 from .DebugSource import *
+from .AppTypes import *

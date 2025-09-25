@@ -1,11 +1,12 @@
-from cmsis_stream.cg.scheduler import *
+from cmsis_stream.cg.scheduler import GenericSink
+from .AppTypes import *
 
 
     
 class Spectrogram(GenericSink):
     def __init__(self,name,nbSamples):
         GenericSink.__init__(self,name)
-        self.addInput("i",CType(F32),2*nbSamples)
+        self.addInput("i",F32_COMPLEX,nbSamples)
         self.addEventOutput()
 
     @property

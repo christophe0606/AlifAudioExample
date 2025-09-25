@@ -1,11 +1,12 @@
-from cmsis_stream.cg.scheduler import *
+from cmsis_stream.cg.scheduler import GenericNode
+from .AppTypes import *
 
 
 class Hanning(GenericNode):
-    def __init__(self,name,theType,outLength):
+    def __init__(self,name,outLength):
         GenericNode.__init__(self,name)
-        self.addInput("i",theType,outLength)
-        self.addOutput("o",theType,outLength)
+        self.addInput("i",F32_SCALAR,outLength)
+        self.addOutput("o",F32_SCALAR,outLength)
 
     @property
     def typeName(self):

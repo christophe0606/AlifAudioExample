@@ -1,49 +1,43 @@
 #pragma once
 
-#include "cg_enums.h"
-#include "StreamNode.hpp"
 #include "GenericNodes.hpp"
-
+#include "StreamNode.hpp"
+#include "cg_enums.h"
+#include "custom.hpp"
 
 using namespace arm_cmsis_stream;
 
-
-template<typename IN,int inputSize,
-         typename OUT,int outputSize>
+template <typename IN, int inputSize,
+          typename OUT, int outputSize>
 class RealToComplex;
 
-template<typename T,int inputSamples,int outputSamples>
-class RealToComplex<T,inputSamples,T,outputSamples>: 
-public GenericNode<T,inputSamples,T,outputSamples>
+template <int inputSamples>
+class RealToComplex<float, inputSamples, cf32, inputSamples> : public GenericNode<float, inputSamples, cf32, inputSamples>
 {
-    static_assert(2*inputSamples==outputSamples,"RealToComplex: output size must be twice the input size");
-public:
-    RealToComplex(FIFOBase<T> &src,FIFOBase<T> &dst):
-    GenericNode<T,inputSamples,T,outputSamples>(src,dst){};
+  public:
+    RealToComplex(FIFOBase<float> &src, FIFOBase<cf32> &dst)
+        : GenericNode<float, inputSamples, cf32, inputSamples>(src, dst) {};
 
-    
     int prepareForRunning() final
     {
         if ((this->willOverflow()) || (this->willUnderflow()))
         {
-           return(CG_SKIP_EXECUTION_ID_CODE); // Skip execution
+            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
         }
 
-        return(0);
+        return (0);
     };
 
-    int run() final{
-        T *o=this->getWriteBuffer();
-        T *in=this->getReadBuffer();
-        for(int i=0;i<inputSamples;i++)
+    int run() final
+    {
+        cf32 *o = this->getWriteBuffer();
+        float *in = this->getReadBuffer();
+        for (int i = 0; i < inputSamples; i++)
         {
-           o[2*i]=in[i];
-           o[2*i+1]=0;
+            o[i].real = in[i];
+            o[i].imag = 0;
         }
 
-        
-        return(CG_SUCCESS);
+        return (CG_SUCCESS);
     };
-
-
 };

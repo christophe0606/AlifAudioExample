@@ -1,4 +1,4 @@
-from cmsis_stream.cg.scheduler import *
+from cmsis_stream.cg.scheduler import Graph,Configuration
 
 from appnodes import *
 
@@ -8,21 +8,22 @@ the_graph = Graph()
 AUDIO_BLOCK = 512 
 FFT_SIZE = 512 
 
+# Use CMSIS VStream to connect to microphones
 src = VStreamAudioSource("audioSource",AUDIO_BLOCK)
 
 # Debug source can be used instead to generate a sine
 # with amplitude modulation
 #src = DebugSource("audioSource",AUDIO_BLOCK)
-src_f32 = Convert("src_f32",CType(Q15),CType(F32),2*AUDIO_BLOCK)
+src_f32 = Convert("src_f32",Q15_STEREO,F32_STEREO,AUDIO_BLOCK)
 
-win_left = Hanning("winLeft",CType(F32),AUDIO_BLOCK)
-win_right= Hanning("winRight",CType(F32),AUDIO_BLOCK)
+win_left = Hanning("winLeft",AUDIO_BLOCK)
+win_right= Hanning("winRight",AUDIO_BLOCK)
 
-stereo_to_mono = StereoToMono("stereoToMono",CType(F32),AUDIO_BLOCK)
-to_complex_left = RealToComplex("toComplexLeft",CType(F32),AUDIO_BLOCK)
-to_complex_right= RealToComplex("toComplexRight",CType(F32),AUDIO_BLOCK)
-fft_left = CFFT("fftLeft",CType(F32),FFT_SIZE)
-fft_right = CFFT("fftRight",CType(F32),FFT_SIZE)
+stereo_to_mono = StereoToMono("stereoToMono",F32,AUDIO_BLOCK)
+to_complex_left = RealToComplex("toComplexLeft",F32,AUDIO_BLOCK)
+to_complex_right= RealToComplex("toComplexRight",F32,AUDIO_BLOCK)
+fft_left = CFFT("fftLeft",F32_COMPLEX,FFT_SIZE)
+fft_right = CFFT("fftRight",F32_COMPLEX,FFT_SIZE)
 
 spectrogram_left = Spectrogram("spectrogramLeft",FFT_SIZE)
 spectrogram_right= Spectrogram("spectrogramRight",FFT_SIZE)

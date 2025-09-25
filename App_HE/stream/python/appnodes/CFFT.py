@@ -1,11 +1,12 @@
-from cmsis_stream.cg.scheduler import *
+from cmsis_stream.cg.scheduler import GenericNode
+from .AppTypes import *
 
 
 class CFFT(GenericNode):
     def __init__(self,name,theType,outLength):
         GenericNode.__init__(self,name)
-        self.addInput("i",theType,2*outLength)
-        self.addOutput("o",theType,2*outLength)
+        self.addInput("i",theType,outLength)
+        self.addOutput("o",theType,outLength)
 
     @property
     def typeName(self):

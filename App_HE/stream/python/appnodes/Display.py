@@ -1,4 +1,4 @@
-from cmsis_stream.cg.scheduler import *
+from cmsis_stream.cg.scheduler import GenericSink
 
 
     

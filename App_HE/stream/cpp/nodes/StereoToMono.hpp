@@ -1,51 +1,46 @@
 #pragma once
 
-#include "cg_enums.h"
-#include "StreamNode.hpp"
 #include "GenericNodes.hpp"
-
+#include "StreamNode.hpp"
+#include "cg_enums.h"
+#include "custom.hpp"
 
 using namespace arm_cmsis_stream;
 
-
-template<typename IN,int inputSize,
-         typename OUT1,int outputSize1,
-         typename OUT2,int outputSize2>
+template <typename IN, int inputSize,
+          typename OUT1, int outputSize1,
+          typename OUT2, int outputSize2>
 class StereoToMono;
 
-template<typename T,int inputSamples,int outputSamples>
-class StereoToMono<T,inputSamples,T,outputSamples,T,outputSamples>: 
-public GenericNode12<T,inputSamples,T,outputSamples,T,outputSamples>
+template <int inputSamples>
+class StereoToMono<sf32, inputSamples, float32_t, inputSamples, float32_t, inputSamples> : public GenericNode12<sf32, inputSamples, float32_t, inputSamples, float32_t, inputSamples>
 {
-    static_assert(inputSamples==2*outputSamples,"StereoToMono: input size must be twice the output size");
-public:
-    StereoToMono(FIFOBase<T> &src,FIFOBase<T> &left,FIFOBase<T> &right):
-    GenericNode12<T,inputSamples,T,outputSamples,T,outputSamples>(src,left,right){};
 
-    
+  public:
+    StereoToMono(FIFOBase<sf32> &src, FIFOBase<float32_t> &left, FIFOBase<float32_t> &right)
+        : GenericNode12<sf32, inputSamples, float32_t, inputSamples, float32_t, inputSamples>(src, left, right) {};
+
     int prepareForRunning() final
     {
         if ((this->willOverflow1()) || (this->willOverflow2()) || (this->willUnderflow()))
         {
-           return(CG_SKIP_EXECUTION_ID_CODE); // Skip execution
+            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
         }
 
-        return(0);
+        return (0);
     };
 
-    int run() final{
-        T *l=this->getWriteBuffer1();
-        T *r=this->getWriteBuffer2();
-        T *in=this->getReadBuffer();
-        for(int i=0;i<outputSamples;i++)
+    int run() final
+    {
+        float32_t *l = this->getWriteBuffer1();
+        float32_t *r = this->getWriteBuffer2();
+        sf32 *in = this->getReadBuffer();
+        for (int i = 0; i < inputSamples; i++)
         {
-            l[i]=in[2*i];
-            r[i]=in[2*i+1];
+            l[i] = in[i].left;
+            r[i] = in[i].right;
         }
 
-        
-        return(CG_SUCCESS);
+        return (CG_SUCCESS);
     };
-
-
 };

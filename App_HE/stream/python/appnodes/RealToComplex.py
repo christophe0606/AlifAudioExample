@@ -1,11 +1,20 @@
-from cmsis_stream.cg.scheduler import *
+from cmsis_stream.cg.scheduler import GenericNode,F32,Q15
+from .AppTypes import *
 
 
 class RealToComplex(GenericNode):
     def __init__(self,name,theType,outLength):
         GenericNode.__init__(self,name)
-        self.addInput("i",theType,outLength)
-        self.addOutput("o",theType,2*outLength)
+        if theType == F32:
+            inputType = F32_SCALAR
+            outputType = F32_COMPLEX
+        elif theType == Q15:
+            inputType = Q15_SCALAR
+            outputType = Q15_COMPLEX
+        else:
+            raise ValueError("Unsupported type for RealToComplex: {}".format(theType))
+        self.addInput("i",inputType,outLength)
+        self.addOutput("o",outputType,outLength)
 
     @property
     def typeName(self):

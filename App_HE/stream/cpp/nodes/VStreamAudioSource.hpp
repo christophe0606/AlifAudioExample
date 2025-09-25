@@ -8,6 +8,8 @@
 #include "StreamNode.hpp"
 #include "arm_math_types.h"
 #include "cg_enums.h"
+#include "custom.hpp"
+
 
 #include "cmsis_os2.h"
 #include "cmsis_vstream.h"
@@ -22,56 +24,64 @@ extern vStreamDriver_t Driver_vStreamAudioIn;
 
 extern osThreadId_t tid_stream;
 
-void AudioDrv_Event_Callback(uint32_t event) {
-  (void)event;
+void AudioDrv_Event_Callback(uint32_t event)
+{
+    (void)event;
 
-  osThreadFlagsSet(tid_stream, VSTREAM_AUDIO_BLOCK_EVT);
+    osThreadFlagsSet(tid_stream, VSTREAM_AUDIO_BLOCK_EVT);
 }
 
-template <typename OUT, int outputSize> class VStreamAudioSource;
+template <typename OUT, int outputSize>
+class VStreamAudioSource;
 
 template <int outputSamples>
-class VStreamAudioSource<q15_t, outputSamples>
-    : public GenericSource<q15_t, outputSamples> {
-public:
-  VStreamAudioSource(FIFOBase<q15_t> &dst)
-      : GenericSource<q15_t, outputSamples>(dst) {
+class VStreamAudioSource<sq15, outputSamples>
+    : public GenericSource<sq15, outputSamples>
+{
+  public:
+    VStreamAudioSource(FIFOBase<sq15> &dst)
+        : GenericSource<sq15, outputSamples>(dst)
+    {
 
-    stereoBuffer = new (std::align_val_t(64)) q15_t[VSTREAM_STEREO_BLOCK_COUNT*outputSamples];
-    /* Initialize audio in stream and set the receive buffer */
-    vStream_AudioIn->Initialize(AudioDrv_Event_Callback);
-    vStream_AudioIn->SetBuf(stereoBuffer,
-                            VSTREAM_STEREO_BLOCK_COUNT*sizeof(q15_t)* outputSamples,
-                            sizeof(q15_t)*outputSamples);
+        stereoBuffer = new (std::align_val_t(64)) sq15[VSTREAM_STEREO_BLOCK_COUNT * outputSamples];
+        /* Initialize audio in stream and set the receive buffer */
+        vStream_AudioIn->Initialize(AudioDrv_Event_Callback);
+        vStream_AudioIn->SetBuf(stereoBuffer,
+                                VSTREAM_STEREO_BLOCK_COUNT * sizeof(sq15) * outputSamples,
+                                sizeof(sq15) * outputSamples);
 
-    /* Start audio receiver */
-    vStream_AudioIn->Start(VSTREAM_MODE_CONTINUOUS);
-  };
+        /* Start audio receiver */
+        vStream_AudioIn->Start(VSTREAM_MODE_CONTINUOUS);
+    };
 
-  ~VStreamAudioSource() {
-    /* Stop audio receiver */
-    vStream_AudioIn->Stop();
-    delete[] (stereoBuffer);
-  };
+    ~VStreamAudioSource()
+    {
+        /* Stop audio receiver */
+        vStream_AudioIn->Stop();
+        delete[] (stereoBuffer);
+    };
 
-  int prepareForRunning() final {
-    if (this->willOverflow()) {
-      return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
-    }
+    int prepareForRunning() final
+    {
+        if (this->willOverflow())
+        {
+            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
+        }
 
-    return (0);
-  };
+        return (0);
+    };
 
-  int run() final {
-    osThreadFlagsWait(VSTREAM_AUDIO_BLOCK_EVT, osFlagsWaitAny, osWaitForever);
-    q15_t *buf = (int16_t *)vStream_AudioIn->GetBlock();
-    q15_t *out = this->getWriteBuffer();
-    memcpy(out, buf, outputSamples * sizeof(q15_t));
-    vStream_AudioIn->ReleaseBlock();
+    int run() final
+    {
+        osThreadFlagsWait(VSTREAM_AUDIO_BLOCK_EVT, osFlagsWaitAny, osWaitForever);
+        sq15 *buf = (sq15 *)vStream_AudioIn->GetBlock();
+        sq15 *out = this->getWriteBuffer();
+        memcpy(out, buf, outputSamples * sizeof(sq15));
+        vStream_AudioIn->ReleaseBlock();
 
-    return (CG_SUCCESS);
-  };
+        return (CG_SUCCESS);
+    };
 
-protected:
-  q15_t *stereoBuffer;
+  protected:
+    sq15 *stereoBuffer;
 };

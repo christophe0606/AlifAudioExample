@@ -131,16 +131,16 @@ display [label=<
 
 
 
-audioSource:i -> src_f32:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<q15(1024)>
-,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+audioSource:i -> src_f32:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<sq15(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>
-,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>]
 
-src_f32:i -> stereoToMono:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(1024)>
-,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+src_f32:i -> stereoToMono:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<sf32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>
-,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>]
 
 stereoToMono:l -> winLeft:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
@@ -167,28 +167,28 @@ winRight:i -> toComplexRight:i [style="solid",color="black",fontsize="12.0",font
 ,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>]
 
-toComplexLeft:i -> fftLeft:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(1024)>
-,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+toComplexLeft:i -> fftLeft:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<cf32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>
-,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>]
 
-toComplexRight:i -> fftRight:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(1024)>
-,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+toComplexRight:i -> fftRight:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<cf32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>
-,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>]
 
-fftLeft:i -> spectrogramLeft:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(1024)>
-,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+fftLeft:i -> spectrogramLeft:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<cf32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>
-,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>]
 
-fftRight:i -> spectrogramRight:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(1024)>
-,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+fftRight:i -> spectrogramRight:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<cf32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>
-,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >1024</FONT>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>]
 
 

@@ -128,16 +128,16 @@ CG_BEFORE_FIFO_BUFFERS
 FIFO buffers
 
 ************/
-#define FIFOSIZE0 1024
-#define FIFOSIZE1 1024
+#define FIFOSIZE0 512
+#define FIFOSIZE1 512
 #define FIFOSIZE2 512
 #define FIFOSIZE3 512
 #define FIFOSIZE4 512
 #define FIFOSIZE5 512
-#define FIFOSIZE6 1024
-#define FIFOSIZE7 1024
-#define FIFOSIZE8 1024
-#define FIFOSIZE9 1024
+#define FIFOSIZE6 512
+#define FIFOSIZE7 512
+#define FIFOSIZE8 512
+#define FIFOSIZE9 512
 
 #define BUFFERSIZE0 4096
 CG_BEFORE_BUFFER
@@ -153,28 +153,28 @@ uint8_t buf2[BUFFERSIZE2]={0};
 
 
 typedef struct {
-FIFO<q15_t,FIFOSIZE0,1,0> *fifo0;
-FIFO<float,FIFOSIZE1,1,0> *fifo1;
+FIFO<sq15,FIFOSIZE0,1,0> *fifo0;
+FIFO<sf32,FIFOSIZE1,1,0> *fifo1;
 FIFO<float,FIFOSIZE2,1,0> *fifo2;
 FIFO<float,FIFOSIZE3,1,0> *fifo3;
 FIFO<float,FIFOSIZE4,1,0> *fifo4;
 FIFO<float,FIFOSIZE5,1,0> *fifo5;
-FIFO<float,FIFOSIZE6,1,0> *fifo6;
-FIFO<float,FIFOSIZE7,1,0> *fifo7;
-FIFO<float,FIFOSIZE8,1,0> *fifo8;
-FIFO<float,FIFOSIZE9,1,0> *fifo9;
+FIFO<cf32,FIFOSIZE6,1,0> *fifo6;
+FIFO<cf32,FIFOSIZE7,1,0> *fifo7;
+FIFO<cf32,FIFOSIZE8,1,0> *fifo8;
+FIFO<cf32,FIFOSIZE9,1,0> *fifo9;
 } fifos_t;
 
 typedef struct {
-    VStreamAudioSource<q15_t,1024> *audioSource;
-    CFFT<float,1024,float,1024> *fftLeft;
-    CFFT<float,1024,float,1024> *fftRight;
-    Spectrogram<float,1024> *spectrogramLeft;
-    Spectrogram<float,1024> *spectrogramRight;
-    Convert<q15_t,1024,float,1024> *src_f32;
-    StereoToMono<float,1024,float,512,float,512> *stereoToMono;
-    RealToComplex<float,512,float,1024> *toComplexLeft;
-    RealToComplex<float,512,float,1024> *toComplexRight;
+    VStreamAudioSource<sq15,512> *audioSource;
+    CFFT<cf32,512,cf32,512> *fftLeft;
+    CFFT<cf32,512,cf32,512> *fftRight;
+    Spectrogram<cf32,512> *spectrogramLeft;
+    Spectrogram<cf32,512> *spectrogramRight;
+    Convert<sq15,512,sf32,512> *src_f32;
+    StereoToMono<sf32,512,float,512,float,512> *stereoToMono;
+    RealToComplex<float,512,cf32,512> *toComplexLeft;
+    RealToComplex<float,512,cf32,512> *toComplexRight;
     Hanning<float,512,float,512> *winLeft;
     Hanning<float,512,float,512> *winRight;
     Display *display;
@@ -202,12 +202,12 @@ int init_scheduler()
 {
 
     CG_BEFORE_FIFO_INIT;
-    fifos.fifo0 = new (std::nothrow) FIFO<q15_t,FIFOSIZE0,1,0>(buf0);
+    fifos.fifo0 = new (std::nothrow) FIFO<sq15,FIFOSIZE0,1,0>(buf0);
     if (fifos.fifo0==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
     }
-    fifos.fifo1 = new (std::nothrow) FIFO<float,FIFOSIZE1,1,0>(buf1);
+    fifos.fifo1 = new (std::nothrow) FIFO<sf32,FIFOSIZE1,1,0>(buf1);
     if (fifos.fifo1==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
@@ -232,22 +232,22 @@ int init_scheduler()
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
     }
-    fifos.fifo6 = new (std::nothrow) FIFO<float,FIFOSIZE6,1,0>(buf2);
+    fifos.fifo6 = new (std::nothrow) FIFO<cf32,FIFOSIZE6,1,0>(buf2);
     if (fifos.fifo6==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
     }
-    fifos.fifo7 = new (std::nothrow) FIFO<float,FIFOSIZE7,1,0>(buf0);
+    fifos.fifo7 = new (std::nothrow) FIFO<cf32,FIFOSIZE7,1,0>(buf0);
     if (fifos.fifo7==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
     }
-    fifos.fifo8 = new (std::nothrow) FIFO<float,FIFOSIZE8,1,0>(buf1);
+    fifos.fifo8 = new (std::nothrow) FIFO<cf32,FIFOSIZE8,1,0>(buf1);
     if (fifos.fifo8==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
     }
-    fifos.fifo9 = new (std::nothrow) FIFO<float,FIFOSIZE9,1,0>(buf1);
+    fifos.fifo9 = new (std::nothrow) FIFO<cf32,FIFOSIZE9,1,0>(buf1);
     if (fifos.fifo9==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
@@ -256,7 +256,7 @@ int init_scheduler()
     CG_BEFORE_NODE_INIT;
     cg_status initError;
 
-    nodes.audioSource = new (std::nothrow) VStreamAudioSource<q15_t,1024>(*(fifos.fifo0));
+    nodes.audioSource = new (std::nothrow) VStreamAudioSource<sq15,512>(*(fifos.fifo0));
     if (nodes.audioSource==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
@@ -269,7 +269,7 @@ int init_scheduler()
         return(initError);
     }
 
-    nodes.fftLeft = new (std::nothrow) CFFT<float,1024,float,1024>(*(fifos.fifo6),*(fifos.fifo8));
+    nodes.fftLeft = new (std::nothrow) CFFT<cf32,512,cf32,512>(*(fifos.fifo6),*(fifos.fifo8));
     if (nodes.fftLeft==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
@@ -282,7 +282,7 @@ int init_scheduler()
         return(initError);
     }
 
-    nodes.fftRight = new (std::nothrow) CFFT<float,1024,float,1024>(*(fifos.fifo7),*(fifos.fifo9));
+    nodes.fftRight = new (std::nothrow) CFFT<cf32,512,cf32,512>(*(fifos.fifo7),*(fifos.fifo9));
     if (nodes.fftRight==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
@@ -295,7 +295,7 @@ int init_scheduler()
         return(initError);
     }
 
-    nodes.spectrogramLeft = new (std::nothrow) Spectrogram<float,1024>(*(fifos.fifo8));
+    nodes.spectrogramLeft = new (std::nothrow) Spectrogram<cf32,512>(*(fifos.fifo8));
     if (nodes.spectrogramLeft==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
@@ -308,7 +308,7 @@ int init_scheduler()
         return(initError);
     }
 
-    nodes.spectrogramRight = new (std::nothrow) Spectrogram<float,1024>(*(fifos.fifo9));
+    nodes.spectrogramRight = new (std::nothrow) Spectrogram<cf32,512>(*(fifos.fifo9));
     if (nodes.spectrogramRight==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
@@ -321,7 +321,7 @@ int init_scheduler()
         return(initError);
     }
 
-    nodes.src_f32 = new (std::nothrow) Convert<q15_t,1024,float,1024>(*(fifos.fifo0),*(fifos.fifo1));
+    nodes.src_f32 = new (std::nothrow) Convert<sq15,512,sf32,512>(*(fifos.fifo0),*(fifos.fifo1));
     if (nodes.src_f32==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
@@ -334,7 +334,7 @@ int init_scheduler()
         return(initError);
     }
 
-    nodes.stereoToMono = new (std::nothrow) StereoToMono<float,1024,float,512,float,512>(*(fifos.fifo1),*(fifos.fifo2),*(fifos.fifo3));
+    nodes.stereoToMono = new (std::nothrow) StereoToMono<sf32,512,float,512,float,512>(*(fifos.fifo1),*(fifos.fifo2),*(fifos.fifo3));
     if (nodes.stereoToMono==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
@@ -347,7 +347,7 @@ int init_scheduler()
         return(initError);
     }
 
-    nodes.toComplexLeft = new (std::nothrow) RealToComplex<float,512,float,1024>(*(fifos.fifo4),*(fifos.fifo6));
+    nodes.toComplexLeft = new (std::nothrow) RealToComplex<float,512,cf32,512>(*(fifos.fifo4),*(fifos.fifo6));
     if (nodes.toComplexLeft==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
@@ -360,7 +360,7 @@ int init_scheduler()
         return(initError);
     }
 
-    nodes.toComplexRight = new (std::nothrow) RealToComplex<float,512,float,1024>(*(fifos.fifo5),*(fifos.fifo7));
+    nodes.toComplexRight = new (std::nothrow) RealToComplex<float,512,cf32,512>(*(fifos.fifo5),*(fifos.fifo7));
     if (nodes.toComplexRight==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);

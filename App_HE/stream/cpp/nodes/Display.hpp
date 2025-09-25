@@ -11,13 +11,13 @@
 #include <cstring>
 #include <variant>
 
-
 extern "C"
 {
 #include "aipl_dave2d.h"
 #include "cmsis_os2.h"
-#include "disp.h"
 #include "config.h"
+#include "disp.h"
+
 }
 
 #define NB_SPECTROGRAM 2
@@ -63,8 +63,7 @@ class Display : public StreamNode
         }
         d2_device *handle = aipl_dave2d_handle();
         d2_settexture(handle, grad_1x256, /*pitch*/ 1, /*width*/ 1, /*height*/ 256,
-                          d2_mode_argb8888);
-
+                      d2_mode_argb8888);
     };
 
     void processEvent(int dstPort, Event &&evt) final
@@ -132,7 +131,6 @@ class Display : public StreamNode
 
             d2_clear(handle, 0xFFFFFFFF);
 
-            
             d2_settexturemode(handle, d2_tm_filter);
 
             drawBins(handle, 0);
@@ -181,7 +179,7 @@ class Display : public StreamNode
             {
                 int h = (int)(bin[i] * height);
                 if (h >= height)
-                    h = height-1;
+                    h = height - 1;
                 if (h == 0)
                     continue;
                 h += pos;
