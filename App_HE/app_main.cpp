@@ -153,16 +153,21 @@ int app_main(void)
 
     configure_display_and_2d();
 
-    const osThreadAttr_t mainAttr = {
+    const osThreadAttr_t dispAttr = {
         .stack_size = 4096,
+    };
+
+    const osThreadAttr_t eventAttr = {
+        .stack_size = 4096,
+        .priority = osPriorityHigh
     };
 
     const osThreadAttr_t audioAttr = {.stack_size = 4096,
                                       .priority = osPriorityRealtime};
     osKernelInitialize();
 
-    tid_display = osThreadNew(display_thread, NULL, &mainAttr);
-    cg_eventThread = osThreadNew(event_thread, NULL, &mainAttr);
+    tid_display = osThreadNew(display_thread, NULL, &dispAttr);
+    cg_eventThread = osThreadNew(event_thread, NULL, &eventAttr);
     tid_stream = osThreadNew(stream_thread, NULL, &audioAttr);
 
 
@@ -174,7 +179,7 @@ int app_main(void)
 
     bin_mutex = osMutexNew(NULL);
 
-    arm_cmsis_stream::EventQueue::cg_eventQueue = new (std::nothrow) MyQueue();
+    arm_cmsis_stream::EventQueue::cg_eventQueue = new (std::nothrow) MyQueue(osPriorityLow, osPriorityNormal, osPriorityHigh);
     if (arm_cmsis_stream::EventQueue::cg_eventQueue == nullptr)
     {
         ERROR_PRINT("Can't create CMSIS Event Queue\n");

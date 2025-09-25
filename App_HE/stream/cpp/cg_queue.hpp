@@ -26,6 +26,13 @@
 #ifndef CG_QUEUE_H
 #define CG_QUEUE_H
 
+extern "C"
+{
+#include "RTE_Components.h"
+#include CMSIS_device_header
+
+#include "cmsis_os2.h" /* CMSIS-RTOS2 API */
+}
 
 #include "cg_enums.h"
 #include "custom.hpp"
@@ -41,7 +48,7 @@
 class MyQueue:public arm_cmsis_stream::EventQueue
 {
 public:
-    MyQueue() ;
+    MyQueue(osPriority_t low, osPriority_t normal, osPriority_t high);
     ~MyQueue();
 
     // This should wakeup the threads processing this queue
@@ -57,11 +64,15 @@ private:
     CG_MUTEX queue_mutex;
     
 protected:
+    constexpr static uint32_t nb_priorities = 3;
+    // Several queues for the three priorities supported
+    // by the event system.
+    arm_cmsis_stream::Message *queue[nb_priorities];
+    int read[nb_priorities],write[nb_priorities];
 
-    arm_cmsis_stream::Message *queue;
-    int read,write=0;
+    uint32_t nb_elems[nb_priorities];
 
-    uint32_t nb_elems=0;
+    osPriority_t priorities[nb_priorities];
 };
 
 
