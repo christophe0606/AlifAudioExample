@@ -133,6 +133,13 @@ display [label=<
 
 </TABLE>>];
 
+videoSource [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">videoSource<BR/>(VStreamVideoSource)</FONT></TD>
+  </TR>
+</TABLE>>];
+
 
 
 audioSource:i -> src_f32:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<sq15(512)>
@@ -201,6 +208,9 @@ spectrogramLeft:0 -> display:0 [style="dashed",color="black",fontsize="12.0",fon
 
 ]
 spectrogramRight:0 -> display:1 [style="dashed",color="black",fontsize="12.0",fontcolor="black",label=<>
+
+]
+videoSource:i -> display:2 [style="dashed",color="black",fontsize="12.0",fontcolor="black",label=<>
 
 ]
 

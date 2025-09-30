@@ -78,6 +78,7 @@ class VStreamVideoSource : public StreamNode
 
     static void release_video_frame(void *frame)
     {
+        DEBUG_PRINT("Release camera frame\n");
         if (vStream_VideoIn->ReleaseBlock() != VSTREAM_OK)
         {
             ERROR_PRINT("Failed to release video input frame\n");
@@ -95,6 +96,7 @@ class VStreamVideoSource : public StreamNode
     {
         if (evt.event_id == kDo)
         {
+            DEBUG_PRINT("kDo for video source\n");
             uint8_t *inFrame = (uint8_t *)vStream_VideoIn->GetBlock();
             if (inFrame != nullptr)
             {
@@ -105,6 +107,10 @@ class VStreamVideoSource : public StreamNode
                                                                          std::move(rgb_buf));
 
                 ev0.sendAsync(kHighPriority, kValue, std::move(t)); // Send the event to the subscribed nodes
+            }
+            else
+            {
+                ERROR_PRINT("No camera frame available\n");
             }
         }
     }

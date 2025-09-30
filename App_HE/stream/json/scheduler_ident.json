@@ -10,5 +10,6 @@
   "toComplexRight": 8,
   "winLeft": 9,
   "winRight": 10,
-  "display": 11
+  "display": 11,
+  "videoSource": 12
 }

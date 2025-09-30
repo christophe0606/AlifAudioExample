@@ -10,20 +10,21 @@ extern "C"
 #include "RTE_Components.h"
 #include CMSIS_device_header
 
-#include "cmsis_os2.h" /* CMSIS-RTOS2 API */
-#include "cstream_node.h"
-#include "cg_enums.h"
-#include "custom.hpp"
 #include "EventQueue.hpp"
 #include "StreamNode.hpp"
-#include "scheduler.h"
+#include "cg_enums.h"
+#include "cmsis_os2.h" /* CMSIS-RTOS2 API */
 #include "config.h"
+#include "cstream_node.h"
+#include "custom.hpp"
+#include "scheduler.h"
 
-extern int app_main(void);
+    extern int app_main(void);
 }
 
-#include "nodes/VStreamVideoSource.hpp"
 #include "nodes/VStreamVideoSink.hpp"
+#include "nodes/VStreamVideoSource.hpp"
+
 
 #include "cg_queue.hpp"
 
@@ -34,7 +35,7 @@ using namespace arm_cmsis_stream;
 
 extern "C"
 {
-    //extern osThreadId_t tid_display;
+    // extern osThreadId_t tid_display;
     extern osThreadId_t tid_interrupts;
     extern osThreadId_t tid_stream;
 
@@ -45,20 +46,18 @@ osMemoryPoolId_t cg_eventPool = nullptr;
 osMemoryPoolId_t cg_bufPool = nullptr;
 osMemoryPoolId_t cg_mutexPool = nullptr;
 
-//osThreadId_t tid_display = nullptr;
+// osThreadId_t tid_display = nullptr;
 osThreadId_t tid_stream = nullptr;
 osThreadId_t cg_eventThread = nullptr;
 osThreadId_t tid_interrupts = nullptr;
 
-//osMutexId_t bin_mutex;
+// osMutexId_t bin_mutex;
 
 /* Camera frame buffer (RAW8 or RGB565) */
-uint8_t CAM_Frame[CAMERA_FRAME_SIZE] CAMERA_FRAME_BUF_ATTRIBUTE;
+uint8_t CAM_Frame[CAMERA_BUFFER_SIZE] CAMERA_FRAME_BUF_ATTRIBUTE;
 
 /* Display frame buffer (RGB888) */
-uint8_t LCD_Frame[DISPLAY_IMAGE_SIZE] DISPLAY_FRAME_BUF_ATTRIBUTE;
-
-
+uint8_t LCD_Frame[DISPLAY_BUFFER_SIZE] DISPLAY_FRAME_BUF_ATTRIBUTE;
 
 int init_memory_pools()
 {
@@ -97,7 +96,7 @@ int init_memory_pools()
 void display_thread(void *arg)
 {
     DEBUG_PRINT("Display thread started\n");
-    
+
     CStreamNode *disp = get_scheduler_node(DISPLAY_ID);
     if (disp)
     {
@@ -128,29 +127,29 @@ endMain:
 
 void VideoSink_Event_Callback(uint32_t event)
 {
-        if (event & VSTREAM_EVENT_DATA)
-        {
-            /* LCD frame is available */
-            if (tid_interrupts != NULL)
-                osThreadFlagsSet(tid_interrupts, VIDEO_SINK_EVT);
-        }
+    if (event & VSTREAM_EVENT_DATA)
+    {
+        /* LCD frame is available */
+        if (tid_interrupts != NULL)
+            osThreadFlagsSet(tid_interrupts, VIDEO_SINK_EVT);
+    }
 }
 
 void VideoSrc_Event_Callback(uint32_t event)
 {
-        if (event & VSTREAM_EVENT_DATA)
-        {
-            /* Video frame is available in camera frame buffer */
-            if (tid_interrupts != NULL)
-                osThreadFlagsSet(tid_interrupts, VIDEO_SRC_EVT);
-        }
+    if (event & VSTREAM_EVENT_DATA)
+    {
+        /* Video frame is available in camera frame buffer */
+        if (tid_interrupts != NULL)
+            osThreadFlagsSet(tid_interrupts, VIDEO_SRC_EVT);
+    }
 }
 
 void interrupt_thread(void *arg)
 {
     DEBUG_PRINT("Interrupt thread started\n");
 
-    #if defined(VIDEOSOURCE_ID)
+#if defined(VIDEOSOURCE_ID)
     CStreamNode *c_video_src = get_scheduler_node(VIDEOSOURCE_ID);
     if (c_video_src == nullptr)
     {
@@ -159,13 +158,13 @@ void interrupt_thread(void *arg)
     }
     VStreamVideoSource *video_src = reinterpret_cast<VStreamVideoSource *>(c_video_src->obj);
 
-    #else 
+#else
     VStreamVideoSource *video_src = nullptr;
-    #endif
+#endif
 
-    #if defined(DISPLAY_ID)
+#if defined(DISPLAY_ID)
     CStreamNode *c_disp = get_scheduler_node(DISPLAY_ID);
-    
+
     if (c_disp == nullptr)
     {
         ERROR_PRINT("No display node found\n");
@@ -174,30 +173,48 @@ void interrupt_thread(void *arg)
 
     VStreamVideoSink *disp = reinterpret_cast<VStreamVideoSink *>(c_disp->obj);
 
-    #else 
+#else
     VStreamVideoSink *disp = nullptr;
-    #endif 
+#endif
+
+    DEBUG_PRINT("Interrupt thread running\n");
 
     for (;;)
     {
         // Wait for interrupt event
-        uint32_t  res =osThreadFlagsWait(VIDEO_SRC_EVT|VIDEO_SINK_EVT, osFlagsWaitAny, osWaitForever);
+        uint32_t res = osThreadFlagsWait(VIDEO_SRC_EVT | VIDEO_SINK_EVT, osFlagsWaitAny, osWaitForever);
         if (video_src && (res & VIDEO_SRC_EVT))
         {
             Message msg{
-                LocalDestination{video_src,0},
-                 Event(kDo,kHighPriority)};
-            EventQueue::cg_eventQueue->push(std::move(msg));
+                LocalDestination{video_src, 0},
+                Event(kDo, kHighPriority)};
+            DEBUG_PRINT("Push event for video src\n");
+            bool ok = EventQueue::cg_eventQueue->push(std::move(msg));
+            if (!ok)
+            {
+                ERROR_PRINT("Event queue overflow for video src\n");
+            }
         }
 
         if (disp && (res & VIDEO_SINK_EVT))
         {
-            Message msg{
-                LocalDestination{disp,0},
-                 Event(kDo,kHighPriority)};
-            EventQueue::cg_eventQueue->push(std::move(msg));
+            // If a new frame is pending
+            if (disp->wasRendered.load())
+            {
+                // We switch to new framebuffer so that the new frame is displayed
+                disp->nextFrameBuffer();
+                // We ask display node to re-render a new frame
+                Message msg{
+                    LocalDestination{disp, 0},
+                    Event(kDo, kHighPriority)};
+                DEBUG_PRINT("Push event for lcd refresh\n");
+                bool ok = EventQueue::cg_eventQueue->push(std::move(msg));
+                if (!ok)
+                {
+                    ERROR_PRINT("Event queue overflow for disp\n");
+                }
+            }
         }
-        
     }
 
     // Cleanup and exit the thread if needed
@@ -246,10 +263,10 @@ err_stream:
 
 int app_main(void)
 {
-    
-    //init_camera();// Introduces heavy flickering on UI although 
-    // camera is not started and just initialized !
-    //configure_display_and_2d();
+
+    // init_camera();// Introduces heavy flickering on UI although
+    //  camera is not started and just initialized !
+    // configure_display_and_2d();
 
     const osThreadAttr_t dispAttr = {
         .stack_size = 4096,
@@ -257,24 +274,21 @@ int app_main(void)
 
     const osThreadAttr_t eventAttr = {
         .stack_size = 4096,
-        .priority = osPriorityHigh
-    };
+        .priority = osPriorityHigh};
 
     const osThreadAttr_t interruptAttr = {
-        .stack_size = 1024,
-        .priority = osPriorityHigh
-    };
+        .stack_size = 4024,
+        .priority = osPriorityHigh};
 
     const osThreadAttr_t audioAttr = {.stack_size = 4096,
                                       .priority = osPriorityRealtime};
     osKernelInitialize();
 
-    //tid_display = osThreadNew(display_thread, NULL, &dispAttr);
+    // tid_display = osThreadNew(display_thread, NULL, &dispAttr);
     tid_interrupts = osThreadNew(interrupt_thread, NULL, &interruptAttr);
 
     cg_eventThread = osThreadNew(event_thread, NULL, &eventAttr);
     tid_stream = osThreadNew(stream_thread, NULL, &audioAttr);
-
 
     int err = init_memory_pools();
     if (err != 0)
@@ -282,7 +296,7 @@ int app_main(void)
         goto err_main;
     }
 
-    //bin_mutex = osMutexNew(NULL);
+    // bin_mutex = osMutexNew(NULL);
 
     arm_cmsis_stream::EventQueue::cg_eventQueue = new (std::nothrow) MyQueue(osPriorityLow, osPriorityNormal, osPriorityHigh);
     if (arm_cmsis_stream::EventQueue::cg_eventQueue == nullptr)

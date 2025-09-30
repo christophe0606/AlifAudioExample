@@ -25,6 +25,7 @@
  */
 
 #include "cg_queue.hpp"
+#include "config.h"
 #include "custom.hpp"
 #include <cstdint>
 #include <variant>
@@ -70,6 +71,7 @@ bool MyQueue::push(arm_cmsis_stream::Message &&event)
         }
         if (nb_elems[p] < MY_QUEUE_MAX_ELEMS)
         {
+            //DEBUG_PRINT("Push event %d\n", event.event.event_id);
             queue[p][write[p]++] = std::move(event);
             if (write[p] == MY_QUEUE_MAX_ELEMS)
             {

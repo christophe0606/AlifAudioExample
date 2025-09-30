@@ -11,9 +11,9 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#if 1
+#if 0
 #define DEBUG_PRINT(fmt, ...) \
-    fprintf(stderr, "[DEBUG] " fmt "\n", ##__VA_ARGS__)
+    fprintf(stderr, "[DEBUG] " fmt, ##__VA_ARGS__)
 #else 
 
 #define DEBUG_PRINT(fmt, ...)
@@ -21,7 +21,7 @@
 
 #if 1
 #define ERROR_PRINT(fmt, ...) \
-    fprintf(stderr, "[ERROR] " fmt "\n", ##__VA_ARGS__)
+    fprintf(stderr, "[ERROR] " fmt, ##__VA_ARGS__)
 #else
 #define ERROR_PRINT(fmt, ...)
 #endif 
@@ -55,8 +55,17 @@ extern void VideoSrc_Event_Callback(uint32_t event);
 //  <i> Common camera frame heights: 240, 480, 600, 720.
 //  <i> Default: 480
 #ifndef CAMERA_FRAME_HEIGHT
-#define CAMERA_FRAME_HEIGHT         240
+#define CAMERA_FRAME_HEIGHT         320
 #endif
+
+//  <o>Camera buffers
+//  <i> Number of camera buffer for double buffering
+//  <i> Common values: 1,2.
+//  <i> Default: 1
+#ifndef CAMERA_NB_BUFFERS
+#define CAMERA_NB_BUFFERS        1
+#endif
+
 
 //  <o>Frame Type <0=>RAW8 <1=>RGB565
 //  <i> Define whether camera frame is raw or RGB.
@@ -109,6 +118,14 @@ extern void VideoSrc_Event_Callback(uint32_t event);
 #define DISPLAY_FRAME_HEIGHT        800
 #endif
 
+//  <o>Display buffers
+//  <i> Number of display buffer for double buffering
+//  <i> Common values: 1,2.
+//  <i> Default: 2
+#ifndef DISPLAY_NB_BUFFERS
+#define DISPLAY_NB_BUFFERS        2
+#endif
+
 //  <s>Frame Buffer Section Name
 //  <i> Define the name of the display frame buffer section
 //  <i> Default: ".bss.lcd_frame_buf"
@@ -124,7 +141,7 @@ extern void VideoSrc_Event_Callback(uint32_t event);
 #endif
 
 /* Number of bytes per pixel for display */
-#define DISPLAY_FRAME_COLOR_BYTES   3
+#define DISPLAY_FRAME_COLOR_BYTES   2
 
 // </h>
 
@@ -155,13 +172,15 @@ extern void VideoSrc_Event_Callback(uint32_t event);
 
 /* Define camera RAW frame size */
 #define CAMERA_FRAME_SIZE      (CAMERA_FRAME_WIDTH * CAMERA_FRAME_HEIGHT * CAMERA_FRAME_COLOR_BYTES)
+#define CAMERA_BUFFER_SIZE     (CAMERA_NB_BUFFERS * CAMERA_FRAME_SIZE)
 
 /* Define display image size */
 #define DISPLAY_IMAGE_SIZE     (DISPLAY_FRAME_WIDTH * DISPLAY_FRAME_HEIGHT * DISPLAY_FRAME_COLOR_BYTES)
+#define DISPLAY_BUFFER_SIZE     (DISPLAY_NB_BUFFERS * DISPLAY_IMAGE_SIZE)
 
-extern uint8_t CAM_Frame[CAMERA_FRAME_SIZE];
+extern uint8_t CAM_Frame[CAMERA_BUFFER_SIZE];
 
 /* Display frame buffer (RGB888) */
-extern uint8_t LCD_Frame[DISPLAY_IMAGE_SIZE];
+extern uint8_t LCD_Frame[DISPLAY_BUFFER_SIZE];
 
 #endif

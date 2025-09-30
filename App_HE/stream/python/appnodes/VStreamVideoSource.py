@@ -3,7 +3,7 @@ from cmsis_stream.cg.scheduler import GenericSource
 from .AppTypes import *
 
 class VStreamVideoSource(GenericSource):
-    def __init__(self,name,outLength):
+    def __init__(self,name):
         GenericSource.__init__(self,name)
         self.addEventOutput(1)
 

@@ -112,6 +112,7 @@ Internal ID identification for the nodes
 #define WINLEFT_INTERNAL_ID 9
 #define WINRIGHT_INTERNAL_ID 10
 #define DISPLAY_INTERNAL_ID 11
+#define VIDEOSOURCE_INTERNAL_ID 12
 
 
 
@@ -178,6 +179,7 @@ typedef struct {
     Hanning<float,512,float,512> *winLeft;
     Hanning<float,512,float,512> *winRight;
     VStreamVideoSink *display;
+    VStreamVideoSource *videoSource;
 } nodes_t;
 
 
@@ -412,10 +414,24 @@ int init_scheduler()
         return(initError);
     }
 
+    nodes.videoSource = new (std::nothrow) VStreamVideoSource;
+    if (nodes.videoSource==NULL)
+    {
+        return(CG_MEMORY_ALLOCATION_FAILURE);
+    }
+    identifiedNodes[VIDEOSOURCE_ID]=createStreamNode(*nodes.videoSource);
+    nodes.videoSource->setID(VIDEOSOURCE_ID);
+    initError = nodes.videoSource->init();
+    if (initError != CG_SUCCESS)
+    {
+        return(initError);
+    }
+
 
 /* Subscribe nodes for the event system*/
     nodes.spectrogramLeft->subscribe(0,*nodes.display,0);
     nodes.spectrogramRight->subscribe(0,*nodes.display,1);
+    nodes.videoSource->subscribe(0,*nodes.display,2);
 
 
     return(CG_SUCCESS);
@@ -512,6 +528,10 @@ void free_scheduler()
     if (nodes.display!=NULL)
     {
         delete nodes.display;
+    }
+    if (nodes.videoSource!=NULL)
+    {
+        delete nodes.videoSource;
     }
 }
 
