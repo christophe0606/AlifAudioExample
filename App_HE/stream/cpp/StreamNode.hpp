@@ -564,11 +564,16 @@ namespace arm_cmsis_stream
             }
         }
 
-        // Exclusive (write) access
         template <typename Func>
-        auto lock(Func &&f) -> decltype(f(CG_MUTEX_ERROR_TYPE(), false, std::declval<T &>()))
+        auto debug(Func &&f) -> decltype(f(CG_MUTEX_ERROR_TYPE(), false, std::declval<T &>()))
         {
-            using R = decltype(f(CG_MUTEX_ERROR_TYPE(), false, std::declval<T &>()));
+        }
+
+        // Exclusive (write) access
+        template <typename Func,typename Z=T>
+        auto lock(Func &&f) -> decltype(f(CG_MUTEX_ERROR_TYPE(), false, std::declval<Z &>()))
+        {
+            using R = decltype(f(CG_MUTEX_ERROR_TYPE(), false, std::declval<Z &>()));
             if constexpr (std::is_void_v<R>)
             {
                 if (mutex)
@@ -606,10 +611,10 @@ namespace arm_cmsis_stream
         }
 
         // Shared (read) access
-        template <typename Func>
-        auto lock_shared(Func &&f) const -> decltype(f(CG_MUTEX_ERROR_TYPE(), std::declval<const T &>()))
+        template <typename Func,typename Z=T>
+        auto lock_shared(Func &&f) const -> decltype(f(CG_MUTEX_ERROR_TYPE(), std::declval<const Z &>()))
         {
-            using R = decltype(f(CG_MUTEX_ERROR_TYPE(), std::declval<const T &>()));
+            using R = decltype(f(CG_MUTEX_ERROR_TYPE(), std::declval<const Z &>()));
             if constexpr (std::is_void_v<R>)
             {
                 if (mutex)
@@ -851,6 +856,7 @@ namespace arm_cmsis_stream
             }
             return *this;
         };
+
 
     private:
         explicit ProtectedBuffer(std::shared_ptr<T> c, std::shared_ptr<CG_MUTEX> mtx) : obj(std::move(c)), mutex(std::move(mtx)) {}

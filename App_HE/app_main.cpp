@@ -1,26 +1,26 @@
 
-#include "EventQueue.hpp"
 #include "cg_enums.h"
-#include "cg_queue.hpp"
 #include "custom.hpp"
 #include <cstdio>
+
+#include "cstream_node.h"
+#include "EventQueue.hpp"
+#include "StreamNode.hpp"
 
 extern "C"
 {
 #include "RTE_Components.h"
 #include CMSIS_device_header
 
-#include "EventQueue.hpp"
-#include "StreamNode.hpp"
-#include "cg_enums.h"
+
 #include "cmsis_os2.h" /* CMSIS-RTOS2 API */
 #include "config.h"
-#include "cstream_node.h"
-#include "custom.hpp"
 #include "scheduler.h"
 
     extern int app_main(void);
 }
+
+#include "cg_queue.hpp"
 
 #include "nodes/VStreamVideoSink.hpp"
 #include "nodes/VStreamVideoSource.hpp"
@@ -261,9 +261,9 @@ err_stream:
     osThreadExit();
 }
 
+
 int app_main(void)
 {
-
     // init_camera();// Introduces heavy flickering on UI although
     //  camera is not started and just initialized !
     // configure_display_and_2d();

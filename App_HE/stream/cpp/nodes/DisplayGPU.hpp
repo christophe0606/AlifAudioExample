@@ -1,7 +1,9 @@
 #pragma once
 
-#include "GenericNodes.hpp"
+#include "cg_enums.h"
+#include "custom.hpp"
 #include "StreamNode.hpp"
+#include "GenericNodes.hpp"
 #include "arm_math_types.h"
 #include "config.h"
 #include "dave_base.h"

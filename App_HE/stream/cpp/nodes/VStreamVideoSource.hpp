@@ -5,18 +5,19 @@
 
 #include CMSIS_device_header
 
-
 #include "GenericNodes.hpp"
 #include "StreamNode.hpp"
 #include "arm_math_types.h"
 #include "cg_enums.h"
 #include "custom.hpp"
 
+
 extern "C"
 {
-#include "config.h"
 #include "cmsis_os2.h"
 #include "cmsis_vstream.h"
+#include "config.h"
+
 }
 
 using namespace arm_cmsis_stream;
@@ -25,25 +26,21 @@ const osThreadAttr_t videoSrcAttr = {
     .stack_size = 4096,
     .priority = osPriorityHigh};
 
-
 extern vStreamDriver_t Driver_vStreamVideoIn;
 #define vStream_VideoIn (&Driver_vStreamVideoIn)
-
 
 #define VSTREAM_VIDEO_SOURCE_BLOCK_EVT (0x1)
 
 class VStreamVideoSource : public StreamNode
 {
   public:
-   
     VStreamVideoSource()
         : StreamNode()
     {
 
-
         vStream_VideoIn->Initialize(VideoSrc_Event_Callback);
 
-         /* Set Input Video buffer */
+        /* Set Input Video buffer */
         if (vStream_VideoIn->SetBuf(CAM_Frame, sizeof(CAM_Frame), CAMERA_FRAME_SIZE) != VSTREAM_OK)
         {
             ERROR_PRINT("Failed to set buffer for video input\n");
@@ -53,8 +50,6 @@ class VStreamVideoSource : public StreamNode
         {
             ERROR_PRINT("Failed to start video capture\n");
         }
-
-
     }
 
     ~VStreamVideoSource()
@@ -70,7 +65,6 @@ class VStreamVideoSource : public StreamNode
         }
     };
 
-   
     void subscribe(int outputPort, StreamNode &dst, int dstPort)
     {
         ev0.subscribe(dst, dstPort);
@@ -100,6 +94,8 @@ class VStreamVideoSource : public StreamNode
             uint8_t *inFrame = (uint8_t *)vStream_VideoIn->GetBlock();
             if (inFrame != nullptr)
             {
+                SCB_InvalidateDCache_by_Addr(inFrame, CAMERA_FRAME_SIZE);
+
                 DEBUG_PRINT("Send frame\n");
                 UniquePtr<uint16_t> rgb_buf((uint16_t *)inFrame, release_video_frame);
                 TensorPtr<uint16_t> t = TensorPtr<uint16_t>::create_with((uint16_t)2,
@@ -115,6 +111,5 @@ class VStreamVideoSource : public StreamNode
         }
     }
 
-    
     EventOutput ev0;
 };

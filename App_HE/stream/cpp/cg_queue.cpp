@@ -81,6 +81,9 @@ bool MyQueue::push(arm_cmsis_stream::Message &&event)
             nb_elems[p]++;
             ok = true;
         }
+        else {
+            ERROR_PRINT("Event queue overflow for priority %d\n", p);
+        }
     }
     CG_EXIT_CRITICAL_SECTION(queue_mutex, error);
     if (cg_eventThread != nullptr)

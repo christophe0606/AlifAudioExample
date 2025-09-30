@@ -3,6 +3,8 @@
 #include "RTE_Components.h"
 #include "config.h"
 #include "m-profile/armv7m_cachel1.h"
+#include <utility>
+#include <variant>
 
 #include CMSIS_device_header
 
@@ -54,6 +56,7 @@ class VStreamVideoSink : public StreamNode
         vStream_VideoOut->ReleaseBlock();
         currentFrame = (uint16_t *)vStream_VideoOut->GetBlock();
         drawFrame();
+        SCB_CleanInvalidateDCache_by_Addr(LCD_Frame, 2 * DISPLAY_IMAGE_SIZE);
         if (vStream_VideoOut->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
         {
             ERROR_PRINT("Failed to start LCD output\n");
@@ -77,7 +80,117 @@ class VStreamVideoSink : public StreamNode
     static constexpr int PADDING_RIGHT = 10;
     static constexpr int PADDING_TOP = 10;
     static constexpr int PADDING_BOTTOM = 10;
-    static constexpr int VERTICAL_SEPARATION = 10;
+    static constexpr int HORIZONTAL_SEPARATION = 10;
+
+    void fillRectangle(int x, int y, int width, int height, uint16_t color)
+    {
+        if (currentFrame == nullptr)
+            return;
+        if (x < 0)
+        {
+            width += x;
+            x = 0;
+        }
+        if (y < 0)
+        {
+            height += y;
+            y = 0;
+        }
+        if (width + x > DISPLAY_FRAME_WIDTH)
+        {
+            width = DISPLAY_FRAME_WIDTH - x;
+        }
+        if (height + y > DISPLAY_FRAME_HEIGHT)
+        {
+            height = DISPLAY_FRAME_HEIGHT - y;
+        }
+        if (width <= 0)
+            return;
+        if (height <= 0)
+            return;
+        for (int i = 0; i < height; i++)
+        {
+            for (int j = 0; j < width; j++)
+            {
+                int px = x + j;
+                int py = y + i;
+                currentFrame[py * DISPLAY_FRAME_WIDTH + px] = color;
+            }
+        }
+    }
+
+    void strokeRectangle(int x, int y, int width, int height, uint16_t color)
+    {
+        if (currentFrame == nullptr)
+            return;
+        bool drawTop = true;
+        bool drawBottom = true;
+        bool drawLeft = true;
+        bool drawRight = true;
+        if (x < 0)
+        {
+            width += x;
+            x = 0;
+            drawLeft = false;
+        }
+        if (y < 0)
+        {
+            height += y;
+            y = 0;
+            drawTop = false;
+        }
+        if (width + x > DISPLAY_FRAME_WIDTH)
+        {
+            width = DISPLAY_FRAME_WIDTH - x;
+            drawRight = false;
+        }
+        if (height + y > DISPLAY_FRAME_HEIGHT)
+        {
+            height = DISPLAY_FRAME_HEIGHT - y;
+            drawBottom = false;
+        }
+
+        if (width <= 0)
+            return;
+        if (height <= 0)
+            return;
+        if (drawTop)
+        {
+            for (int j = 0; j < width; j++)
+            {
+                int px = x + j;
+                int py = y;
+                currentFrame[py * DISPLAY_FRAME_WIDTH + px] = color;
+            }
+        }
+        if (drawBottom)
+        {
+            for (int j = 0; j < width; j++)
+            {
+                int px = x + j;
+                int py = y + height - 1;
+                currentFrame[py * DISPLAY_FRAME_WIDTH + px] = color;
+            }
+        }
+        if (drawLeft)
+        {
+            for (int i = 0; i < height; i++)
+            {
+                int px = x;
+                int py = y + i;
+                currentFrame[py * DISPLAY_FRAME_WIDTH + px] = color;
+            }
+        }
+        if (drawRight)
+        {
+            for (int i = 0; i < height; i++)
+            {
+                int px = x + width - 1;
+                int py = y + i;
+                currentFrame[py * DISPLAY_FRAME_WIDTH + px] = color;
+            }
+        }
+    }
 
     void drawFrame()
     {
@@ -85,27 +198,46 @@ class VStreamVideoSink : public StreamNode
         if (currentFrame == nullptr)
             return;
         memset(currentFrame, 0xFF, DISPLAY_IMAGE_SIZE);
-        for (int i = 0; i < DISPLAY_FRAME_WIDTH; i++)
+        const int boxWidth = (DISPLAY_FRAME_WIDTH - PADDING_LEFT - PADDING_RIGHT - HORIZONTAL_SEPARATION) / 2;
+        const int boxHeight = DISPLAY_FRAME_HEIGHT - PADDING_TOP - PADDING_BOTTOM;
+
+        strokeRectangle(PADDING_LEFT, PADDING_TOP, boxWidth, boxHeight, 0x00);
+        strokeRectangle(PADDING_LEFT + boxWidth + HORIZONTAL_SEPARATION, PADDING_TOP, boxWidth, boxHeight, 0x00);
+        fillRectangle(0,0,CAMERA_FRAME_WIDTH,CAMERA_FRAME_HEIGHT,0x03F << 5);
+        if (hasCameraFrame)
         {
-            for (int k = 0; k < 5; k++)
+#if 0
+            currentCameraFrame.lock_shared([this](CG_MUTEX_ERROR_TYPE error, const Tensor<uint16_t> &tensor)
+                                           {
+            if (!CG_MUTEX_HAS_ERROR(error))
             {
-                currentFrame[(50 + k) * DISPLAY_FRAME_WIDTH + i] = 0x0;
-            }
+               
+            
+             if (std::holds_alternative<UniquePtr<uint16_t>>(tensor.data))
+                {
+                const UniquePtr<uint16_t> &buf = std::get<UniquePtr<uint16_t>>(tensor.data);
+                for (int h = 0; h < tensor.dims[0]>>1; h++)
+                {
+                    for (int w = 0; w < tensor.dims[1]>>1; w++)
+                    {
+                        currentFrame[w + h * DISPLAY_FRAME_WIDTH] = buf.get()[(w<<1) + (h<<1) * tensor.dims[1]];
+                    }
+                }
+            } }
+             hasCameraFrame = false;
+        });
+           
+#endif
+            currentCameraFrame = std::move(TensorPtr<uint16_t>()); // Release the frame so that camera get new one
         }
-        /*
-        for (int w = 0; w < DISPLAY_FRAME_WIDTH; w++)
-        {
-            for (int h = 0; h < DISPLAY_FRAME_HEIGHT; h++)
-            {
-                // *inFrame++ = 0x1F << 11; // Add red tint
-            }
-        }
-            */
     }
 
     // The node was asked to render a new frame
-    void renderNewFrame()
+    void
+    renderNewFrame()
     {
+        // Was rendered is still true so new buffer has
+        // not yet been taken into account
         if (wasRendered.load())
             return; // Previous frame not yet displayed
 
@@ -114,18 +246,20 @@ class VStreamVideoSink : public StreamNode
 
         drawFrame();
 
+        SCB_CleanInvalidateDCache_by_Addr(currentFrame, DISPLAY_IMAGE_SIZE);
+
         // A new frame is pending to be displayed
         wasRendered.store(true);
     }
 
     void nextFrameBuffer()
     {
-        SCB_CleanInvalidateDCache_by_Addr(currentFrame, DISPLAY_IMAGE_SIZE);
         if (vStream_VideoOut->ReleaseBlock() != VSTREAM_OK)
         {
             ERROR_PRINT("Failed to release video input frame\n");
         }
         currentFrame = (uint16_t *)vStream_VideoOut->GetBlock();
+
         wasRendered.store(false);
     }
 
@@ -146,7 +280,7 @@ class VStreamVideoSink : public StreamNode
             {
                 if (evt.wellFormed<TensorPtr<uint16_t>>())
                 {
-                    evt.apply(&VStreamVideoSink::processCameraFrame, *this);
+                    evt.apply<TensorPtr<uint16_t>>(&VStreamVideoSink::processCameraFrame, *this);
                     return;
                 }
             }
@@ -156,7 +290,7 @@ class VStreamVideoSink : public StreamNode
             {
                 if (evt.wellFormed<TensorPtr<float>>())
                 {
-                    evt.apply(&VStreamVideoSink::processLeftSpectrogram, *this);
+                    evt.apply<TensorPtr<float>>(&VStreamVideoSink::processLeftSpectrogram, *this);
                     return;
                 }
             }
@@ -166,7 +300,7 @@ class VStreamVideoSink : public StreamNode
             {
                 if (evt.wellFormed<TensorPtr<float>>())
                 {
-                    evt.apply(&VStreamVideoSink::processRightSpectrogram, *this);
+                    evt.apply<TensorPtr<float>>(&VStreamVideoSink::processRightSpectrogram, *this);
                     return;
                 }
             }
@@ -178,6 +312,8 @@ class VStreamVideoSink : public StreamNode
   protected:
     void processCameraFrame(TensorPtr<uint16_t> &&frame)
     {
+        hasCameraFrame = true;
+        currentCameraFrame = std::move(frame);
     }
 
     void processLeftSpectrogram(TensorPtr<float> &&frame)
@@ -189,4 +325,6 @@ class VStreamVideoSink : public StreamNode
     }
 
     uint16_t *currentFrame = nullptr;
+    bool hasCameraFrame = false;
+    TensorPtr<uint16_t> currentCameraFrame;
 };

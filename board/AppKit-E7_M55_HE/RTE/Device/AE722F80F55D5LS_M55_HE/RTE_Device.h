@@ -386,7 +386,7 @@
 //     <55=> USER_DEFINED_8
 // <i> defines select CSI2 Data type to be overwrite
 // <i> default: RAW10
-#define RTE_MIPI_CSI2_EN_DT                 43
+#define RTE_MIPI_CSI2_EN_DT                 34
 
 // <o> datatype to overwrite with programmed datatype
 // <i> define if want to use programmed datatype ignoring datatype of the header

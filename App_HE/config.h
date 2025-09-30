@@ -63,7 +63,7 @@ extern void VideoSrc_Event_Callback(uint32_t event);
 //  <i> Common values: 1,2.
 //  <i> Default: 1
 #ifndef CAMERA_NB_BUFFERS
-#define CAMERA_NB_BUFFERS        1
+#define CAMERA_NB_BUFFERS       1
 #endif
 
 

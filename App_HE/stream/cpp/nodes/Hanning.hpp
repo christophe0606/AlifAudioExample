@@ -1,9 +1,10 @@
 #pragma once
 
-#include "GenericNodes.hpp"
-#include "StreamNode.hpp"
-#include "arm_math_types.h"
 #include "cg_enums.h"
+#include "custom.hpp"
+#include "StreamNode.hpp"
+#include "GenericNodes.hpp"
+#include "arm_math_types.h"
 #include "dsp/basic_math_functions.h"
 #include "dsp/window_functions.h"
 #include <cstring>

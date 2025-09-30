@@ -4,11 +4,11 @@
 
 #include <new>
 
-#include "GenericNodes.hpp"
-#include "StreamNode.hpp"
-#include "arm_math_types.h"
 #include "cg_enums.h"
 #include "custom.hpp"
+#include "StreamNode.hpp"
+#include "GenericNodes.hpp"
+#include "arm_math_types.h"
 
 #include "cmsis_os2.h"
 #include "cmsis_vstream.h"
