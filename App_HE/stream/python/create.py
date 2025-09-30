@@ -6,10 +6,13 @@ from appnodes import *
 the_graph = Graph()
 
 AUDIO_BLOCK = 512 
+VIDEO_BLOCK_SOURCE = 320*320
+VIDEO_BLOCK_SINK = 480*800
 FFT_SIZE = 512 
 
 # Use CMSIS VStream to connect to microphones
 src = VStreamAudioSource("audioSource",AUDIO_BLOCK)
+#video = VStreamVideoSource("videoSource",VIDEO_BLOCK_SOURCE)
 
 # Debug source can be used instead to generate a sine
 # with amplitude modulation
@@ -28,8 +31,8 @@ fft_right = CFFT("fftRight",F32_COMPLEX,FFT_SIZE)
 spectrogram_left = Spectrogram("spectrogramLeft",FFT_SIZE)
 spectrogram_right= Spectrogram("spectrogramRight",FFT_SIZE)
 
-display = Display("display")
-
+#display = DisplayGPU("display")
+display = VStreamVideoSink("display")
 
 
 the_graph.connect(src.o,src_f32.i)
@@ -47,8 +50,9 @@ the_graph.connect(fft_right.o,spectrogram_right.i)
 
 the_graph.connect(spectrogram_left[0],display[0])
 the_graph.connect(spectrogram_right[0],display[1])
+#the_graph.connect(video[0],display[2])
 
-
+#
 conf = Configuration()
 conf.CMSISDSP = False
 conf.asynchronous = False

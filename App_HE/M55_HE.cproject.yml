@@ -7,12 +7,7 @@ project:
       files:
         - file: ./app_main.cpp
 
-    - group: ImageProcessingLibraryIntegration
-      files:
-        - file: aipl/video_alloc.c
-        - file: aipl/cpu_cache.c
-        - file: display/disp.c
-
+  
     - group: Stream
       files:
         - file: stream/cpp/cg_queue.cpp
@@ -21,9 +16,6 @@ project:
 
   add-path:
     - .
-    - aipl
-    - graphics
-    - display
     - stream/cpp 
     - stream
     - stream/scheduler
@@ -38,15 +30,7 @@ project:
             - -Wno-nan-infinity-disabled
     - component: CMSIS:OS Tick:SysTick
     - component: CMSIS:RTOS2:Keil RTX5&Source
-    - component: Graphics:AIPL:Basic
-    - component: Graphics:AIPL:Color conversion
-    - component: Graphics:AIPL:Color correction
-    - component: Graphics:AIPL:Demosaic
-    - component: Graphics:AIPL:Essential
-    - component: Graphics:Acceleration:Dave2d
-    - component: Graphics:DAVE2D:Layer0Lib
-    - component: Graphics:DAVE2D:Layer1
-    - component: Graphics:DAVE2D:Layer2
+   
 
   layers:
     - layer: $Board-Layer$

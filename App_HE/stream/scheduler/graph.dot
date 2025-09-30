@@ -118,11 +118,15 @@ display [label=<
 <TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
   <TR>
     <TD PORT="0"><FONT POINT-SIZE="12.0" COLOR="black">ev0</FONT></TD>
-    <TD ALIGN="CENTER" ROWSPAN="2"><FONT COLOR="black" POINT-SIZE="14.0">display<BR/>(Display)</FONT></TD>
+    <TD ALIGN="CENTER" ROWSPAN="3"><FONT COLOR="black" POINT-SIZE="14.0">display<BR/>(VStreamVideoSink)</FONT></TD>
     <TD></TD>
   </TR>
 <TR>
 <TD PORT="1"><FONT POINT-SIZE="12.0" COLOR="black">ev1</FONT></TD>
+
+ 
+<TD></TD></TR><TR>
+<TD PORT="2"><FONT POINT-SIZE="12.0" COLOR="black">ev2</FONT></TD>
 
  
 <TD></TD></TR>

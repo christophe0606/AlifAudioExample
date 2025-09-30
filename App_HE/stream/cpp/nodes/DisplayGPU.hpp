@@ -34,14 +34,14 @@ static_assert(std::atomic<uint32_t>::is_always_lock_free, "expected lock-free 32
 
 static __ALIGNED(16) uint32_t grad_1x256[256];
 
-class Display : public StreamNode
+class DisplayGPU : public StreamNode
 {
   public:
     // The constructor for the sink is only using
     // the input FIFO (coming from the generated scheduler).
     // This FIFO is passed to the GenericSink contructor.
     // Implementation of this Sink constructor is doing nothing
-    Display()
+    DisplayGPU()
         : StreamNode()
     {
         memset(left_bins, 0, sizeof(left_bins));

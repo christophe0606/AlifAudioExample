@@ -177,7 +177,7 @@ typedef struct {
     RealToComplex<float,512,cf32,512> *toComplexRight;
     Hanning<float,512,float,512> *winLeft;
     Hanning<float,512,float,512> *winRight;
-    Display *display;
+    VStreamVideoSink *display;
 } nodes_t;
 
 
@@ -399,7 +399,7 @@ int init_scheduler()
         return(initError);
     }
 
-    nodes.display = new (std::nothrow) Display;
+    nodes.display = new (std::nothrow) VStreamVideoSink;
     if (nodes.display==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);

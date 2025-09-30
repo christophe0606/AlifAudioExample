@@ -27,7 +27,7 @@
     "isTemplate": true,
     "selectors": []
   },
-  "Display": {
+  "VStreamVideoSink": {
     "isTemplate": false,
     "selectors": []
   }

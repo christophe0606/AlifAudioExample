@@ -10,26 +10,18 @@
 #include "cg_enums.h"
 #include "custom.hpp"
 
-
 #include "cmsis_os2.h"
 #include "cmsis_vstream.h"
 
 using namespace arm_cmsis_stream;
 
-#define VSTREAM_STEREO_BLOCK_COUNT (2)
-#define VSTREAM_AUDIO_BLOCK_EVT (0x1)
+#define VSTREAM_STEREO_SOURCE_BLOCK_COUNT (2)
+#define VSTREAM_AUDIO_SOURCE_BLOCK_EVT (0x1)
 
 extern vStreamDriver_t Driver_vStreamAudioIn;
 #define vStream_AudioIn (&Driver_vStreamAudioIn)
 
 extern osThreadId_t tid_stream;
-
-void AudioDrv_Event_Callback(uint32_t event)
-{
-    (void)event;
-
-    osThreadFlagsSet(tid_stream, VSTREAM_AUDIO_BLOCK_EVT);
-}
 
 template <typename OUT, int outputSize>
 class VStreamAudioSource;
@@ -39,15 +31,22 @@ class VStreamAudioSource<sq15, outputSamples>
     : public GenericSource<sq15, outputSamples>
 {
   public:
+    static void AudioSourceDrv_Event_Callback(uint32_t event)
+    {
+        (void)event;
+
+        osThreadFlagsSet(tid_stream, VSTREAM_AUDIO_SOURCE_BLOCK_EVT);
+    }
+
     VStreamAudioSource(FIFOBase<sq15> &dst)
         : GenericSource<sq15, outputSamples>(dst)
     {
 
-        stereoBuffer = new (std::align_val_t(64)) sq15[VSTREAM_STEREO_BLOCK_COUNT * outputSamples];
+        stereoBuffer = new (std::align_val_t(64)) sq15[VSTREAM_STEREO_SOURCE_BLOCK_COUNT * outputSamples];
         /* Initialize audio in stream and set the receive buffer */
-        vStream_AudioIn->Initialize(AudioDrv_Event_Callback);
+        vStream_AudioIn->Initialize(AudioSourceDrv_Event_Callback);
         vStream_AudioIn->SetBuf(stereoBuffer,
-                                VSTREAM_STEREO_BLOCK_COUNT * sizeof(sq15) * outputSamples,
+                                VSTREAM_STEREO_SOURCE_BLOCK_COUNT * sizeof(sq15) * outputSamples,
                                 sizeof(sq15) * outputSamples);
 
         /* Start audio receiver */
@@ -73,7 +72,7 @@ class VStreamAudioSource<sq15, outputSamples>
 
     int run() final
     {
-        osThreadFlagsWait(VSTREAM_AUDIO_BLOCK_EVT, osFlagsWaitAny, osWaitForever);
+        osThreadFlagsWait(VSTREAM_AUDIO_SOURCE_BLOCK_EVT, osFlagsWaitAny, osWaitForever);
         sq15 *buf = (sq15 *)vStream_AudioIn->GetBlock();
         sq15 *out = this->getWriteBuffer();
         memcpy(out, buf, outputSamples * sizeof(sq15));

@@ -4,10 +4,6 @@
 #include <cstdio>
 #include <type_traits>
 
-extern "C"
-{
-    #include "config.h"
-}
 
 extern osMemoryPoolId_t cg_eventPool;
 extern osMemoryPoolId_t cg_bufPool;
@@ -35,7 +31,7 @@ public:
     {
         if ((n == 1) && (sizeof(T) <= osMemoryPoolGetBlockSize(cg_eventPool)))
         {
-            //DEBUG_PRINT("Alloc event %d\n",sizeof(T));
+            //CG_DEBUG_PRINT("Alloc event %d\n",sizeof(T));
             return static_cast<T *>(osMemoryPoolAlloc(cg_eventPool,0));
         }
         else
@@ -83,7 +79,7 @@ public:
     {
         if ((n == 1) && (sizeof(T) <= osMemoryPoolGetBlockSize(cg_bufPool)))
         {
-            //DEBUG_PRINT("Alloc buf %d\n",sizeof(T));
+            //CG_DEBUG_PRINT("Alloc buf %d\n",sizeof(T));
             return static_cast<T *>(osMemoryPoolAlloc(cg_bufPool,0));
         }
         else
@@ -134,7 +130,7 @@ public:
             void *ptr=osMemoryPoolAlloc(cg_mutexPool,0);
             if (ptr == nullptr)
             {
-                ERROR_PRINT("Failed to allocate mutex memory %d, nb = %d\n",sizeof(T),osMemoryPoolGetCount(cg_mutexPool));
+                //CG_ERROR_PRINT("Failed to allocate mutex memory %d, nb = %d\n",sizeof(T),osMemoryPoolGetCount(cg_mutexPool));
             }
             
             return static_cast<T *>(ptr);

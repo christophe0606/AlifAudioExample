@@ -1,4 +1,5 @@
 
+#include "EventQueue.hpp"
 #include "cg_enums.h"
 #include "cg_queue.hpp"
 #include "custom.hpp"
@@ -11,13 +12,18 @@ extern "C"
 
 #include "cmsis_os2.h" /* CMSIS-RTOS2 API */
 #include "cstream_node.h"
-#include "disp.h"
-#include "main.h"
+#include "cg_enums.h"
+#include "custom.hpp"
+#include "EventQueue.hpp"
+#include "StreamNode.hpp"
 #include "scheduler.h"
 #include "config.h"
+
+extern int app_main(void);
 }
 
-#include "nodes/Display.hpp"
+#include "nodes/VStreamVideoSource.hpp"
+#include "nodes/VStreamVideoSink.hpp"
 
 #include "cg_queue.hpp"
 
@@ -28,7 +34,8 @@ using namespace arm_cmsis_stream;
 
 extern "C"
 {
-    extern osThreadId_t tid_display;
+    //extern osThreadId_t tid_display;
+    extern osThreadId_t tid_interrupts;
     extern osThreadId_t tid_stream;
 
     extern osThreadId_t cg_eventThread;
@@ -38,12 +45,20 @@ osMemoryPoolId_t cg_eventPool = nullptr;
 osMemoryPoolId_t cg_bufPool = nullptr;
 osMemoryPoolId_t cg_mutexPool = nullptr;
 
-osThreadId_t tid_display = nullptr;
+//osThreadId_t tid_display = nullptr;
 osThreadId_t tid_stream = nullptr;
-
 osThreadId_t cg_eventThread = nullptr;
+osThreadId_t tid_interrupts = nullptr;
 
-osMutexId_t bin_mutex;
+//osMutexId_t bin_mutex;
+
+/* Camera frame buffer (RAW8 or RGB565) */
+uint8_t CAM_Frame[CAMERA_FRAME_SIZE] CAMERA_FRAME_BUF_ATTRIBUTE;
+
+/* Display frame buffer (RGB888) */
+uint8_t LCD_Frame[DISPLAY_IMAGE_SIZE] DISPLAY_FRAME_BUF_ATTRIBUTE;
+
+
 
 int init_memory_pools()
 {
@@ -78,6 +93,7 @@ int init_memory_pools()
     return 0;
 }
 
+/*
 void display_thread(void *arg)
 {
     DEBUG_PRINT("Display thread started\n");
@@ -106,6 +122,86 @@ void display_thread(void *arg)
 
 endMain:
     DEBUG_PRINT("Display thread exit\n");
+    osThreadExit();
+}
+*/
+
+void VideoSink_Event_Callback(uint32_t event)
+{
+        if (event & VSTREAM_EVENT_DATA)
+        {
+            /* LCD frame is available */
+            if (tid_interrupts != NULL)
+                osThreadFlagsSet(tid_interrupts, VIDEO_SINK_EVT);
+        }
+}
+
+void VideoSrc_Event_Callback(uint32_t event)
+{
+        if (event & VSTREAM_EVENT_DATA)
+        {
+            /* Video frame is available in camera frame buffer */
+            if (tid_interrupts != NULL)
+                osThreadFlagsSet(tid_interrupts, VIDEO_SRC_EVT);
+        }
+}
+
+void interrupt_thread(void *arg)
+{
+    DEBUG_PRINT("Interrupt thread started\n");
+
+    #if defined(VIDEOSOURCE_ID)
+    CStreamNode *c_video_src = get_scheduler_node(VIDEOSOURCE_ID);
+    if (c_video_src == nullptr)
+    {
+        ERROR_PRINT("No video source node found\n");
+        osThreadExit();
+    }
+    VStreamVideoSource *video_src = reinterpret_cast<VStreamVideoSource *>(c_video_src->obj);
+
+    #else 
+    VStreamVideoSource *video_src = nullptr;
+    #endif
+
+    #if defined(DISPLAY_ID)
+    CStreamNode *c_disp = get_scheduler_node(DISPLAY_ID);
+    
+    if (c_disp == nullptr)
+    {
+        ERROR_PRINT("No display node found\n");
+        osThreadExit();
+    }
+
+    VStreamVideoSink *disp = reinterpret_cast<VStreamVideoSink *>(c_disp->obj);
+
+    #else 
+    VStreamVideoSink *disp = nullptr;
+    #endif 
+
+    for (;;)
+    {
+        // Wait for interrupt event
+        uint32_t  res =osThreadFlagsWait(VIDEO_SRC_EVT|VIDEO_SINK_EVT, osFlagsWaitAny, osWaitForever);
+        if (video_src && (res & VIDEO_SRC_EVT))
+        {
+            Message msg{
+                LocalDestination{video_src,0},
+                 Event(kDo,kHighPriority)};
+            EventQueue::cg_eventQueue->push(std::move(msg));
+        }
+
+        if (disp && (res & VIDEO_SINK_EVT))
+        {
+            Message msg{
+                LocalDestination{disp,0},
+                 Event(kDo,kHighPriority)};
+            EventQueue::cg_eventQueue->push(std::move(msg));
+        }
+        
+    }
+
+    // Cleanup and exit the thread if needed
+    DEBUG_PRINT("Interrupt thread exit\n");
     osThreadExit();
 }
 
@@ -150,8 +246,10 @@ err_stream:
 
 int app_main(void)
 {
-
-    configure_display_and_2d();
+    
+    //init_camera();// Introduces heavy flickering on UI although 
+    // camera is not started and just initialized !
+    //configure_display_and_2d();
 
     const osThreadAttr_t dispAttr = {
         .stack_size = 4096,
@@ -162,11 +260,18 @@ int app_main(void)
         .priority = osPriorityHigh
     };
 
+    const osThreadAttr_t interruptAttr = {
+        .stack_size = 1024,
+        .priority = osPriorityHigh
+    };
+
     const osThreadAttr_t audioAttr = {.stack_size = 4096,
                                       .priority = osPriorityRealtime};
     osKernelInitialize();
 
-    tid_display = osThreadNew(display_thread, NULL, &dispAttr);
+    //tid_display = osThreadNew(display_thread, NULL, &dispAttr);
+    tid_interrupts = osThreadNew(interrupt_thread, NULL, &interruptAttr);
+
     cg_eventThread = osThreadNew(event_thread, NULL, &eventAttr);
     tid_stream = osThreadNew(stream_thread, NULL, &audioAttr);
 
@@ -177,7 +282,7 @@ int app_main(void)
         goto err_main;
     }
 
-    bin_mutex = osMutexNew(NULL);
+    //bin_mutex = osMutexNew(NULL);
 
     arm_cmsis_stream::EventQueue::cg_eventQueue = new (std::nothrow) MyQueue(osPriorityLow, osPriorityNormal, osPriorityHigh);
     if (arm_cmsis_stream::EventQueue::cg_eventQueue == nullptr)

@@ -36,6 +36,8 @@
 #include <array>
 #include <string>
 
+#include <iostream>
+
 #include "cg_enums.h"
 
 #define CG_TENSOR_NB_DIMS 8
@@ -94,20 +96,20 @@
 #define CG_MAX_VALUES 8
 #endif
 
+#ifndef DEBUG_PRINT
+#define DEBUG_PRINT(...) //printf(__VA_ARGS__)
+#endif
+
+#ifndef ERROR_PRINT
+#define ERROR_PRINT(...) //printf(__VA_ARGS__)
+#endif
+
 /* Node ID is -1 when nodes are not identified for the external world */
 #define CG_UNIDENTIFIED_NODE (-1)
 
 namespace arm_cmsis_stream
 {
-    template <typename T, void (*Fn)(T *)>
-    struct DeleterThunk
-    {
-        static void call(void *p)
-        {
-            Fn(static_cast<T *>(p));
-        }
-    };
-
+    
     class Descriptor;
 
     using NativeHandle =
@@ -213,7 +215,7 @@ namespace arm_cmsis_stream
             }
             if (global_id_ == -1)
             {
-                fprintf(stderr, "Global id not set.\n");
+                ERROR_PRINT("Global id not set.\n");
                 return -1; // Error: Lock offset not set
             }
             return MemServer::mem_server->lock(global_id_);
@@ -227,7 +229,7 @@ namespace arm_cmsis_stream
             }
             if (global_id_ == -1)
             {
-                fprintf(stderr, "Global id not set.\n");
+                ERROR_PRINT("Global id not set.\n");
                 return -1; // Error: Lock offset not set
             }
             return MemServer::mem_server->read_lock(global_id_);
@@ -241,7 +243,7 @@ namespace arm_cmsis_stream
             }
             if (global_id_ == -1)
             {
-                fprintf(stderr, "Global id is not set.\n");
+                ERROR_PRINT("Global id is not set.\n");
                 return -1; // Error: Lock offset not set
             }
             return MemServer::mem_server->unlock(global_id_);
@@ -255,7 +257,7 @@ namespace arm_cmsis_stream
             }
             if (global_id_ == -1)
             {
-                fprintf(stderr, "Global id is not set.\n");
+                ERROR_PRINT("Global id is not set.\n");
                 return -1; // Error: Lock offset not set
             }
             return MemServer::mem_server->read_unlock(global_id_);
@@ -431,17 +433,10 @@ namespace arm_cmsis_stream
         {
         }
 
-        template <typename D>
-        explicit UniquePtr(T *ptr, D deleter) noexcept
-            : ptr_(ptr)
+        explicit UniquePtr(T *ptr,deleter_t d) noexcept
         {
-
-            constexpr auto fn = static_cast<void (*)(T *)>(+deleter);
-
-            // Declare the thunk type
-            using Thunk = DeleterThunk<T, fn>;
-
-            deleter_ = &Thunk::call;
+            ptr_ = ptr;
+            deleter_ = d;
         }
 
         UniquePtr(const UniquePtr &other) = delete; // Disable copy constructor
@@ -493,6 +488,9 @@ namespace arm_cmsis_stream
         T *get() noexcept { return static_cast<T *>(ptr_); }
         const T *get() const noexcept { return static_cast<const T *>(ptr_); }
 
+        T *operator->() { return get(); }
+        const T *operator->() const { return get(); }
+
         template <typename R>
         R *as() noexcept { return static_cast<R *>(ptr_); }
 
@@ -540,6 +538,14 @@ namespace arm_cmsis_stream
         std::shared_ptr<CG_MUTEX> mutex;
 
     public:
+        long use_count() const noexcept
+        {
+            if (obj)
+            {
+                return obj.use_count();
+            }
+            return 0;
+        }
         // Create with custom allocator and arguments for T
         template <typename... Args>
         static ProtectedBuffer create_with(Args &&...args)
@@ -1108,7 +1114,11 @@ namespace arm_cmsis_stream
         std::array<cg_value, CG_MAX_VALUES> values; // Array of values
     };
 
-    using EventData = std::variant<cg_value, std::shared_ptr<ListValue>>;
+    // Shared_ptr is used to avoid increasing the side of the variant 
+    // unique_ptr is not used because we do not want the type of the
+    // deleter to be part of the variant type
+    // Perhaps UniquePtr may be used ...
+    using EventData = std::variant<cg_value, UniquePtr<ListValue>>;
 
     template <typename T>
     struct ValueParse
@@ -1118,15 +1128,22 @@ namespace arm_cmsis_stream
             return std::holds_alternative<T>(data.value);
         }
 
-        static inline T getValue(const cg_value &data) noexcept
+        static inline T getValue(cg_value &&data) noexcept
         {
             if (std::holds_alternative<T>(data.value))
             {
-                return std::get<T>(data.value);
+                return std::get<T>(std::move(data.value));
             }
             return T(); // Default value if not found
         }
     };
+
+    template <typename T>
+void PrintType(void)
+{
+    //T t;
+    std::cout << __PRETTY_FUNCTION__ << "\r\n";
+};
 
     template <typename T>
     struct ValueParse<TensorPtr<T>>
@@ -1153,7 +1170,7 @@ namespace arm_cmsis_stream
             return false;
         }
 
-        static inline TensorPtr<T> getValue(const cg_value &data) noexcept
+        static inline TensorPtr<T> getValue(cg_value &&data) noexcept
         {
             if constexpr (std::is_const<T>::value)
             {
@@ -1163,7 +1180,7 @@ namespace arm_cmsis_stream
                     const cg_any_const_tensor &tensor = std::get<cg_any_const_tensor>(data.value);
                     if (std::holds_alternative<TensorPtr<T>>(tensor))
                     {
-                        return std::get<TensorPtr<T>>(tensor);
+                        return std::get<TensorPtr<T>>(std::get<cg_any_const_tensor>(std::move(data.value)));
                     }
                 }
             }
@@ -1174,7 +1191,7 @@ namespace arm_cmsis_stream
                     const cg_any_tensor &tensor = std::get<cg_any_tensor>(data.value);
                     if (std::holds_alternative<TensorPtr<T>>(tensor))
                     {
-                        return std::get<TensorPtr<T>>(tensor);
+                        return std::get<TensorPtr<T>>(std::get<cg_any_tensor>(std::move(data.value)));
                     }
                 }
             }
@@ -1191,7 +1208,7 @@ namespace arm_cmsis_stream
             return std::holds_alternative<uint16_t>(data.value) || ValueParse<uint8_t>::contains(data);
         }
 
-        static inline uint16_t getValue(const cg_value &data) noexcept
+        static inline uint16_t getValue(cg_value &&data) noexcept
         {
             if (std::holds_alternative<uint16_t>(data.value))
             {
@@ -1199,7 +1216,7 @@ namespace arm_cmsis_stream
             }
             else
             {
-                return static_cast<uint16_t>(ValueParse<uint8_t>::getValue(data)); // Fallback to uint32_t if not found
+                return static_cast<uint16_t>(ValueParse<uint8_t>::getValue(std::move(data))); // Fallback to uint32_t if not found
             }
         }
     };
@@ -1212,7 +1229,7 @@ namespace arm_cmsis_stream
             return std::holds_alternative<uint32_t>(data.value) || ValueParse<uint16_t>::contains(data);
         }
 
-        static inline uint32_t getValue(const cg_value &data) noexcept
+        static inline uint32_t getValue(cg_value &&data) noexcept
         {
             if (std::holds_alternative<uint32_t>(data.value))
             {
@@ -1220,7 +1237,7 @@ namespace arm_cmsis_stream
             }
             else
             {
-                return static_cast<uint32_t>(ValueParse<uint16_t>::getValue(data)); // Fallback to uint32_t if not found
+                return static_cast<uint32_t>(ValueParse<uint16_t>::getValue(std::move(data))); // Fallback to uint32_t if not found
             }
         }
     };
@@ -1233,7 +1250,7 @@ namespace arm_cmsis_stream
             return std::holds_alternative<uint64_t>(data.value) || ValueParse<uint32_t>::contains(data);
         }
 
-        static inline uint64_t getValue(const cg_value &data) noexcept
+        static inline uint64_t getValue(cg_value &&data) noexcept
         {
             if (std::holds_alternative<uint64_t>(data.value))
             {
@@ -1241,7 +1258,7 @@ namespace arm_cmsis_stream
             }
             else
             {
-                return static_cast<uint64_t>(ValueParse<uint32_t>::getValue(data)); // Fallback to uint32_t if not found
+                return static_cast<uint64_t>(ValueParse<uint32_t>::getValue(std::move(data))); // Fallback to uint32_t if not found
             }
         }
     };
@@ -1254,7 +1271,7 @@ namespace arm_cmsis_stream
             return std::holds_alternative<int16_t>(data.value) || ValueParse<int8_t>::contains(data);
         }
 
-        static inline int16_t getValue(const cg_value &data) noexcept
+        static inline int16_t getValue(cg_value &&data) noexcept
         {
             if (std::holds_alternative<int16_t>(data.value))
             {
@@ -1262,7 +1279,7 @@ namespace arm_cmsis_stream
             }
             else
             {
-                return static_cast<int16_t>(ValueParse<int8_t>::getValue(data)); // Fallback to uint32_t if not found
+                return static_cast<int16_t>(ValueParse<int8_t>::getValue(std::move(data))); // Fallback to uint32_t if not found
             }
         }
     };
@@ -1275,7 +1292,7 @@ namespace arm_cmsis_stream
             return std::holds_alternative<int32_t>(data.value) || ValueParse<int16_t>::contains(data);
         }
 
-        static inline int32_t getValue(const cg_value &data) noexcept
+        static inline int32_t getValue(cg_value &&data) noexcept
         {
             if (std::holds_alternative<int32_t>(data.value))
             {
@@ -1283,7 +1300,7 @@ namespace arm_cmsis_stream
             }
             else
             {
-                return static_cast<int32_t>(ValueParse<int16_t>::getValue(data)); // Fallback to uint32_t if not found
+                return static_cast<int32_t>(ValueParse<int16_t>::getValue(std::move(data))); // Fallback to uint32_t if not found
             }
         }
     };
@@ -1296,7 +1313,7 @@ namespace arm_cmsis_stream
             return std::holds_alternative<int64_t>(data.value) || ValueParse<int32_t>::contains(data);
         }
 
-        static inline int64_t getValue(const cg_value &data) noexcept
+        static inline int64_t getValue(cg_value &&data) noexcept
         {
             if (std::holds_alternative<int64_t>(data.value))
             {
@@ -1304,7 +1321,7 @@ namespace arm_cmsis_stream
             }
             else
             {
-                return static_cast<int64_t>(ValueParse<int32_t>::getValue(data)); // Fallback to uint32_t if not found
+                return static_cast<int64_t>(ValueParse<int32_t>::getValue(std::move(data))); // Fallback to uint32_t if not found
             }
         }
     };
@@ -1318,7 +1335,7 @@ namespace arm_cmsis_stream
                    ValueParse<int32_t>::contains(data);
         }
 
-        static inline float getValue(const cg_value &data) noexcept
+        static inline float getValue(cg_value &&data) noexcept
         {
             if (std::holds_alternative<float>(data.value))
             {
@@ -1326,7 +1343,7 @@ namespace arm_cmsis_stream
             }
             else
             {
-                return static_cast<float>(ValueParse<int32_t>::getValue(data)); // Fallback to uint32_t if not found
+                return static_cast<float>(ValueParse<int32_t>::getValue(std::move(data))); // Fallback to uint32_t if not found
             }
         }
     };
@@ -1341,7 +1358,7 @@ namespace arm_cmsis_stream
                    ValueParse<float>::contains(data);
         }
 
-        static inline double getValue(const cg_value &data) noexcept
+        static inline double getValue(cg_value &&data) noexcept
         {
             if (std::holds_alternative<double>(data.value))
             {
@@ -1353,7 +1370,7 @@ namespace arm_cmsis_stream
             }
             else
             {
-                return static_cast<double>(ValueParse<float>::getValue(data)); // Fallback to uint32_t if not found
+                return static_cast<double>(ValueParse<float>::getValue(std::move(data))); // Fallback to uint32_t if not found
             }
         }
     };
@@ -1389,7 +1406,24 @@ namespace arm_cmsis_stream
         void copyFrom(const Event &other) noexcept
         {
             event_id = other.event_id;
-            data = other.data;
+            if (std::holds_alternative<UniquePtr<ListValue>>(other.data))
+            {
+                UniquePtr<ListValue> new_lv = make_new_list_value();
+                const UniquePtr<ListValue> &lv = std::get<UniquePtr<ListValue>>(other.data);
+                if (new_lv)
+                {
+                    for (uint32_t i = 0; i < lv->nb_values; ++i)
+                    {
+                        new_lv->values[i] = lv->values[i];
+                    }
+                    new_lv->nb_values = lv->nb_values;
+                }
+                data = std::move(new_lv);
+            }
+            else
+            {
+                data = std::get<cg_value>(other.data);
+            }
             priority = other.priority;
         }
 
@@ -1402,11 +1436,11 @@ namespace arm_cmsis_stream
         };
 
         template <typename F, typename O, typename... Args, std::size_t... Is>
-        void apply_array_types(F &&f, O &&o, const std::array<cg_value, CG_MAX_VALUES> &values,
+        void apply_array_types(F &&f, O &&o, std::array<cg_value, CG_MAX_VALUES> &&values,
                                std::index_sequence<Is...>) const
         {
             (o.*f)(ValueParse<
-                   typename std::tuple_element<Is, std::tuple<Args...>>::type>::getValue(values[Is])...);
+                   typename std::tuple_element<Is, std::tuple<Args...>>::type>::getValue(std::move(values[Is]))...);
         };
 
     public:
@@ -1414,9 +1448,26 @@ namespace arm_cmsis_stream
         uint32_t priority;
         EventData data;
 
-        static std::shared_ptr<ListValue> make_new_list_value()
+        Event clone() const noexcept
         {
-            return std::allocate_shared<ListValue>(CG_MK_LIST_EVENT_ALLOCATOR(ListValue));
+            Event evt;
+            evt.copyFrom(*this);
+            return evt;
+        }
+
+        static void list_value_deleter(void *p) noexcept
+        {
+            ListValue *lv = static_cast<ListValue *>(p);
+            lv->~ListValue();
+            CG_MK_LIST_EVENT_ALLOCATOR(ListValue).deallocate(static_cast<ListValue *>(p), 1);
+        }
+
+        static UniquePtr<ListValue> make_new_list_value()
+        {
+            void *p= CG_MK_LIST_EVENT_ALLOCATOR(ListValue).allocate(1);
+            ListValue *val = new (p) ListValue();
+
+            return UniquePtr<ListValue>(val, Event::list_value_deleter);
         }
 
         Event() noexcept : event_id(kNoEvent), priority(kNormalPriority)
@@ -1427,7 +1478,7 @@ namespace arm_cmsis_stream
         explicit operator bool() const noexcept { return event_id != kNoEvent; }
 
         Event(uint32_t id,
-              std::shared_ptr<ListValue> cv,
+              UniquePtr<ListValue> &&cv,
               enum cg_event_priority evtPriority) noexcept : event_id(id)
         {
             data = std::move(cv);
@@ -1453,7 +1504,7 @@ namespace arm_cmsis_stream
             }
             else if constexpr (sizeof...(Args) > 1)
             {
-                std::shared_ptr<ListValue> cbv = make_new_list_value();
+                UniquePtr<ListValue> cbv = make_new_list_value();
                 if (cbv)
                 {
                     cbv->nb_values = sizeof...(Args);
@@ -1469,24 +1520,24 @@ namespace arm_cmsis_stream
             }
         };
 
-        Event(const Event &other) noexcept
+        /*Event(const Event &other) noexcept
         {
             copyFrom(other);
-        }
+        }*/
 
         Event(Event &&other) noexcept
         {
             moveFrom(std::move(other));
         }
 
-        Event &operator=(const Event &other) noexcept
+        /*Event &operator=(const Event &other) noexcept
         {
             if (this != &other)
             {
                 copyFrom(other);
             }
             return *this;
-        }
+        }*/
 
         Event &operator=(Event &&other) noexcept
         {
@@ -1509,13 +1560,11 @@ namespace arm_cmsis_stream
         }
 
         template <typename T>
-        T get() const noexcept
+        T get() noexcept
         {
             if (std::holds_alternative<cg_value>(data))
             {
-                const cg_value &val = std::get<cg_value>(data);
-
-                return ValueParse<T>::getValue(val);
+                return ValueParse<T>::getValue(std::get<cg_value>(std::move(data)));
             }
             return T{}; // Default value if not found
         }
@@ -1542,9 +1591,9 @@ namespace arm_cmsis_stream
             else if constexpr (sizeof...(Args) > 1)
             {
 
-                if (std::holds_alternative<std::shared_ptr<ListValue>>(data))
+                if (std::holds_alternative<UniquePtr<ListValue>>(data))
                 {
-                    std::shared_ptr<ListValue> cbv = std::get<std::shared_ptr<ListValue>>(data);
+                    const UniquePtr<ListValue> &cbv = std::get<UniquePtr<ListValue>>(data);
                     if (cbv && cbv->nb_values > 0)
                     {
                         if (sizeof...(Args) != cbv->nb_values)
@@ -1567,7 +1616,7 @@ namespace arm_cmsis_stream
         };
 
         template <typename... Args, typename F, typename O>
-        bool apply(F &&f, O &&o) const
+        bool apply(F &&f, O &&o)
         {
             if constexpr (sizeof...(Args) == 0)
             {
@@ -1577,8 +1626,7 @@ namespace arm_cmsis_stream
             {
                 if (std::holds_alternative<cg_value>(data))
                 {
-                    const cg_value &val = std::get<cg_value>(data);
-                    (o.*f)(ValueParse<Args...>::getValue(val)); // Check if the single argument matches
+                    (o.*f)(ValueParse<Args...>::getValue(std::get<cg_value>(std::move(data)))); // Check if the single argument matches
                     return true;
                 }
                 else
@@ -1590,10 +1638,10 @@ namespace arm_cmsis_stream
             else if constexpr (sizeof...(Args) > 1)
             {
 
-                if (std::holds_alternative<std::shared_ptr<ListValue>>(data))
+                if (std::holds_alternative<UniquePtr<ListValue>>(data))
                 {
 
-                    std::shared_ptr<ListValue> cbv = std::get<std::shared_ptr<ListValue>>(data);
+                    UniquePtr<ListValue> cbv = std::get<UniquePtr<ListValue>>(std::move(data));
                     if (cbv && cbv->nb_values > 0)
                     {
                         if (sizeof...(Args) != cbv->nb_values)
@@ -1603,7 +1651,7 @@ namespace arm_cmsis_stream
                         }
                         else
                         {
-                            apply_array_types<F, O, Args...>(std::forward<F>(f), std::forward<O>(o), cbv->values,
+                            apply_array_types<F, O, Args...>(std::forward<F>(f), std::forward<O>(o), std::move(cbv->values),
                                                              std::make_index_sequence<sizeof...(Args)>{});
                             return true;
                         }
