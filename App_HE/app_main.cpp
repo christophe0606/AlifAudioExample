@@ -24,6 +24,7 @@ extern "C"
 
 #include "nodes/AppDisplay.hpp"
 #include "nodes/VStreamVideoSource.hpp"
+#include "nodes/VStreamAudioSource.hpp"
 
 #include "cg_queue.hpp"
 
@@ -169,6 +170,17 @@ void stream_thread(void *arg)
     uint32_t nb_iter;
     int error;
     DEBUG_PRINT("Stream thread started\n");
+    /* Start audio 
+
+    It is not done in the audio node because the time between node
+    creations and start of scheduler may be too big and
+    it may lead to buffer overflow for audio
+    
+    */
+    if (vStream_AudioIn->Start(VSTREAM_MODE_CONTINUOUS) != VSTREAM_OK)
+    {
+            ERROR_PRINT("vStream_AudioIn Start error\n");
+    }
 
     nb_iter = scheduler(&error);
     if (error != 0)

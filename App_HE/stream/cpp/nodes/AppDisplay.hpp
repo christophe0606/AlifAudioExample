@@ -50,6 +50,12 @@ class AppDisplay : public VStreamVideoSink
     static constexpr int PADDING_TOP = 10;
     static constexpr int PADDING_BOTTOM = 10;
     static constexpr int HORIZONTAL_SEPARATION = 10;
+    static constexpr int boxWidth = (DISPLAY_FRAME_WIDTH - PADDING_LEFT - PADDING_RIGHT - HORIZONTAL_SEPARATION) / 2;
+    static constexpr int boxHeight = DISPLAY_FRAME_HEIGHT - PADDING_TOP - PADDING_BOTTOM;
+    static constexpr int delta = (int)(boxHeight / (float)(NB_BINS-1));
+    static constexpr uint16_t redColor = 0x01F << 11;
+    static constexpr uint16_t greenColor = 0x03F << 5;
+    static constexpr uint16_t orangeColor = redColor | (0x00F << 5);
 
     void fillRectangle(int x, int y, int width, int height, uint16_t color)
     {
@@ -157,16 +163,60 @@ class AppDisplay : public VStreamVideoSink
         }
     }
 
+    void drawSpectrogram(int pos, const TensorPtr<float> &s)
+    {
+
+        s.lock_shared([this, pos](CG_MUTEX_ERROR_TYPE error, const Tensor<float> &tensor)
+                      {
+            if (!CG_MUTEX_HAS_ERROR(error))
+            {
+                if (tensor.dims[0] == NB_BINS)
+                {
+                    if (std::holds_alternative<UniquePtr<float>>(tensor.data))
+                    {
+                        const UniquePtr<float> &buf = std::get<UniquePtr<float>>(tensor.data);
+                        float p = 0;
+
+                        for (int i = 0; i < NB_BINS; i++)
+                        {
+                            p = i * delta;
+            /*
+            fillRectangle(pos,
+                          (int)(PADDING_TOP + p),
+                          (int)(boxWidth * buf.get()[i]),
+                          (int)(delta),
+                          greenColor);
+            */
+            float v = buf.get()[i];
+            if (v > 1.0f)
+                v = 1.0f;
+            if (v < 0.0f)
+                v = 0.0f;
+            fillRectangle(pos,
+                          (int)(PADDING_TOP + p),
+                          (int)(boxWidth * v),
+                          delta,
+                          greenColor);
+                        }
+                    }
+                }
+            } });
+    }
+
     void drawFrame() final override
     {
 
         memset(renderingFrame, 0xFF, DISPLAY_IMAGE_SIZE);
-        const int boxWidth = (DISPLAY_FRAME_WIDTH - PADDING_LEFT - PADDING_RIGHT - HORIZONTAL_SEPARATION) / 2;
-        const int boxHeight = DISPLAY_FRAME_HEIGHT - PADDING_TOP - PADDING_BOTTOM;
+
+        // fillRectangle(0,0,CAMERA_FRAME_WIDTH,CAMERA_FRAME_HEIGHT,0x03F << 5);
+        // Draw spectrograms
+
+        drawSpectrogram(PADDING_LEFT, leftSpectrogram);
+        drawSpectrogram(PADDING_LEFT + boxWidth + HORIZONTAL_SEPARATION, rightSpectrogram);
 
         strokeRectangle(PADDING_LEFT, PADDING_TOP, boxWidth, boxHeight, 0x00);
         strokeRectangle(PADDING_LEFT + boxWidth + HORIZONTAL_SEPARATION, PADDING_TOP, boxWidth, boxHeight, 0x00);
-        // fillRectangle(0,0,CAMERA_FRAME_WIDTH,CAMERA_FRAME_HEIGHT,0x03F << 5);
+       
         if (hasCameraFrame)
         {
 #if 1
@@ -185,13 +235,14 @@ class AppDisplay : public VStreamVideoSink
                     {
                         for (int w = 0; w < tensor.dims[1]; w++)
                         {
-                            renderingFrame[wpad+w + (h+hpad) * DISPLAY_FRAME_WIDTH] = buf.get()[(w) + (h) * tensor.dims[1]];
+                            renderingFrame[wpad+w + (DISPLAY_FRAME_HEIGHT-h-hpad) * DISPLAY_FRAME_WIDTH] = buf.get()[(w) + (h) * tensor.dims[1]];
                         }
                     }
             } } });
 
 #endif
         }
+         
     }
 
     void processEvent(int dstPort, Event &&evt) final override
@@ -248,12 +299,16 @@ class AppDisplay : public VStreamVideoSink
 
     void processLeftSpectrogram(TensorPtr<float> &&frame)
     {
+        leftSpectrogram = std::move(frame);
     }
 
     void processRightSpectrogram(TensorPtr<float> &&frame)
     {
+        rightSpectrogram = std::move(frame);
     }
 
     bool hasCameraFrame = false;
     TensorPtr<uint16_t> currentCameraFrame;
+    TensorPtr<float> leftSpectrogram;
+    TensorPtr<float> rightSpectrogram;
 };
