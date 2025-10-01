@@ -29,7 +29,7 @@ fft_right = CFFT("fftRight",F32_COMPLEX,FFT_SIZE)
 spectrogram_left = Spectrogram("spectrogramLeft",FFT_SIZE)
 spectrogram_right= Spectrogram("spectrogramRight",FFT_SIZE)
 
-display = VStreamVideoSink("display")
+display = AppDisplay("display")
 
 
 the_graph.connect(src.o,src_f32.i)

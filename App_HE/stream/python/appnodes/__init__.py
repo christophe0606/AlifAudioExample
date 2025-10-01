@@ -12,3 +12,4 @@ from .DisplayGPU import *
 from .Hanning import *
 from .DebugSource import *
 from .AppTypes import *
+from .AppDisplay import *

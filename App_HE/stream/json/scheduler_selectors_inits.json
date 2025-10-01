@@ -27,7 +27,7 @@
     "isTemplate": true,
     "selectors": []
   },
-  "VStreamVideoSink": {
+  "AppDisplay": {
     "isTemplate": false,
     "selectors": []
   },

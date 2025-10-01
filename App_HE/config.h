@@ -118,13 +118,6 @@ extern void VideoSrc_Event_Callback(uint32_t event);
 #define DISPLAY_FRAME_HEIGHT        800
 #endif
 
-//  <o>Display buffers
-//  <i> Number of display buffer for double buffering
-//  <i> Common values: 1,2.
-//  <i> Default: 2
-#ifndef DISPLAY_NB_BUFFERS
-#define DISPLAY_NB_BUFFERS        2
-#endif
 
 //  <s>Frame Buffer Section Name
 //  <i> Define the name of the display frame buffer section
@@ -176,11 +169,11 @@ extern void VideoSrc_Event_Callback(uint32_t event);
 
 /* Define display image size */
 #define DISPLAY_IMAGE_SIZE     (DISPLAY_FRAME_WIDTH * DISPLAY_FRAME_HEIGHT * DISPLAY_FRAME_COLOR_BYTES)
-#define DISPLAY_BUFFER_SIZE     (DISPLAY_NB_BUFFERS * DISPLAY_IMAGE_SIZE)
+#define DISPLAY_BUFFER_SIZE    (DISPLAY_IMAGE_SIZE)
 
 extern uint8_t CAM_Frame[CAMERA_BUFFER_SIZE];
 
-/* Display frame buffer (RGB888) */
+/* Display frame buffer */
 extern uint8_t LCD_Frame[DISPLAY_BUFFER_SIZE];
 
 #endif

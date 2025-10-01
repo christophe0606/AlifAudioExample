@@ -3,15 +3,15 @@
 #include "custom.hpp"
 #include <cstdio>
 
-#include "cstream_node.h"
 #include "EventQueue.hpp"
 #include "StreamNode.hpp"
+#include "cstream_node.h"
+
 
 extern "C"
 {
 #include "RTE_Components.h"
 #include CMSIS_device_header
-
 
 #include "cmsis_os2.h" /* CMSIS-RTOS2 API */
 #include "config.h"
@@ -22,9 +22,8 @@ extern "C"
 
 #include "cg_queue.hpp"
 
-#include "nodes/VStreamVideoSink.hpp"
+#include "nodes/AppDisplay.hpp"
 #include "nodes/VStreamVideoSource.hpp"
-
 
 #include "cg_queue.hpp"
 
@@ -35,7 +34,6 @@ using namespace arm_cmsis_stream;
 
 extern "C"
 {
-    // extern osThreadId_t tid_display;
     extern osThreadId_t tid_interrupts;
     extern osThreadId_t tid_stream;
 
@@ -46,7 +44,6 @@ osMemoryPoolId_t cg_eventPool = nullptr;
 osMemoryPoolId_t cg_bufPool = nullptr;
 osMemoryPoolId_t cg_mutexPool = nullptr;
 
-// osThreadId_t tid_display = nullptr;
 osThreadId_t tid_stream = nullptr;
 osThreadId_t cg_eventThread = nullptr;
 osThreadId_t tid_interrupts = nullptr;
@@ -56,7 +53,7 @@ osThreadId_t tid_interrupts = nullptr;
 /* Camera frame buffer (RAW8 or RGB565) */
 uint8_t CAM_Frame[CAMERA_BUFFER_SIZE] CAMERA_FRAME_BUF_ATTRIBUTE;
 
-/* Display frame buffer (RGB888) */
+/* Display frame buffer */
 uint8_t LCD_Frame[DISPLAY_BUFFER_SIZE] DISPLAY_FRAME_BUF_ATTRIBUTE;
 
 int init_memory_pools()
@@ -92,56 +89,29 @@ int init_memory_pools()
     return 0;
 }
 
-/*
-void display_thread(void *arg)
-{
-    DEBUG_PRINT("Display thread started\n");
-
-    CStreamNode *disp = get_scheduler_node(DISPLAY_ID);
-    if (disp)
-    {
-        Display *display = reinterpret_cast<Display *>(disp->obj);
-
-        for (;;)
-        {
-            bool has_changed = false;
-            has_changed = display->render();
-            if (has_changed)
-            {
-                lcd_content_was_changed = 1;
-            }
-            osThreadFlagsWait(LCD_REFRESH_FLAG, osFlagsWaitAny, osWaitForever);
-        }
-    }
-    else
-    {
-        ERROR_PRINT("No display node found\n");
-        goto endMain;
-    }
-
-endMain:
-    DEBUG_PRINT("Display thread exit\n");
-    osThreadExit();
-}
-*/
-
-void VideoSink_Event_Callback(uint32_t event)
-{
-    if (event & VSTREAM_EVENT_DATA)
-    {
-        /* LCD frame is available */
-        if (tid_interrupts != NULL)
-            osThreadFlagsSet(tid_interrupts, VIDEO_SINK_EVT);
-    }
-}
 
 void VideoSrc_Event_Callback(uint32_t event)
 {
     if (event & VSTREAM_EVENT_DATA)
     {
-        /* Video frame is available in camera frame buffer */
+        /* LCD frame is available */
         if (tid_interrupts != NULL)
             osThreadFlagsSet(tid_interrupts, VIDEO_SRC_EVT);
+    }
+}
+
+
+AppDisplay *disp = nullptr;
+VStreamVideoSource *video_src = nullptr;
+
+void VideoSink_Event_Callback(uint32_t event)
+{
+    if (event & VSTREAM_EVENT_DATA)
+    {
+        
+        /* Video frame is available in camera frame buffer */
+        // if (tid_interrupts != NULL)
+        //     osThreadFlagsSet(tid_interrupts, VIDEO_SRC_EVT);
     }
 }
 
@@ -149,40 +119,11 @@ void interrupt_thread(void *arg)
 {
     DEBUG_PRINT("Interrupt thread started\n");
 
-#if defined(VIDEOSOURCE_ID)
-    CStreamNode *c_video_src = get_scheduler_node(VIDEOSOURCE_ID);
-    if (c_video_src == nullptr)
-    {
-        ERROR_PRINT("No video source node found\n");
-        osThreadExit();
-    }
-    VStreamVideoSource *video_src = reinterpret_cast<VStreamVideoSource *>(c_video_src->obj);
-
-#else
-    VStreamVideoSource *video_src = nullptr;
-#endif
-
-#if defined(DISPLAY_ID)
-    CStreamNode *c_disp = get_scheduler_node(DISPLAY_ID);
-
-    if (c_disp == nullptr)
-    {
-        ERROR_PRINT("No display node found\n");
-        osThreadExit();
-    }
-
-    VStreamVideoSink *disp = reinterpret_cast<VStreamVideoSink *>(c_disp->obj);
-
-#else
-    VStreamVideoSink *disp = nullptr;
-#endif
-
-    DEBUG_PRINT("Interrupt thread running\n");
 
     for (;;)
     {
         // Wait for interrupt event
-        uint32_t res = osThreadFlagsWait(VIDEO_SRC_EVT | VIDEO_SINK_EVT, osFlagsWaitAny, osWaitForever);
+        uint32_t res = osThreadFlagsWait(VIDEO_SRC_EVT, osFlagsWaitAny, osWaitForever);
         if (video_src && (res & VIDEO_SRC_EVT))
         {
             Message msg{
@@ -196,25 +137,6 @@ void interrupt_thread(void *arg)
             }
         }
 
-        if (disp && (res & VIDEO_SINK_EVT))
-        {
-            // If a new frame is pending
-            if (disp->wasRendered.load())
-            {
-                // We switch to new framebuffer so that the new frame is displayed
-                disp->nextFrameBuffer();
-                // We ask display node to re-render a new frame
-                Message msg{
-                    LocalDestination{disp, 0},
-                    Event(kDo, kHighPriority)};
-                DEBUG_PRINT("Push event for lcd refresh\n");
-                bool ok = EventQueue::cg_eventQueue->push(std::move(msg));
-                if (!ok)
-                {
-                    ERROR_PRINT("Event queue overflow for disp\n");
-                }
-            }
-        }
     }
 
     // Cleanup and exit the thread if needed
@@ -261,9 +183,10 @@ err_stream:
     osThreadExit();
 }
 
-
 int app_main(void)
 {
+    CStreamNode *c_video_src = nullptr;
+    CStreamNode *c_disp = nullptr;
     // init_camera();// Introduces heavy flickering on UI although
     //  camera is not started and just initialized !
     // configure_display_and_2d();
@@ -313,6 +236,34 @@ int app_main(void)
         ERROR_PRINT("Error: Memory allocation failure during scheduler initialization.\n");
         goto err_main;
     }
+
+#if defined(VIDEOSOURCE_ID)
+    c_video_src = get_scheduler_node(VIDEOSOURCE_ID);
+    if (c_video_src == nullptr)
+    {
+        ERROR_PRINT("No video source node found\n");
+        osThreadExit();
+    }
+    video_src = reinterpret_cast<VStreamVideoSource *>(c_video_src->obj);
+
+#else
+    video_src = nullptr;
+#endif
+
+#if defined(DISPLAY_ID)
+    c_disp = get_scheduler_node(DISPLAY_ID);
+
+    if (c_disp == nullptr)
+    {
+        ERROR_PRINT("No display node found\n");
+        osThreadExit();
+    }
+
+    disp = reinterpret_cast<AppDisplay *>(c_disp->obj);
+
+#else
+    disp = nullptr;
+#endif
 
     DEBUG_PRINT("Scheduler initialized successfully\n");
 
