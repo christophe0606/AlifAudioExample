@@ -9,3 +9,4 @@ from .RealToComplex import *
 from .Convert import *
 from .Hanning import *
 from .NodeTypes import *
+from .NullSink import *

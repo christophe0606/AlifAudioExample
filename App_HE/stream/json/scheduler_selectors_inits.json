@@ -1,5 +1,5 @@
 {
-  "VStreamAudioSink<sq15,512>": {
+  "NullSink<sq15,512>": {
     "isTemplate": true,
     "selectors": []
   },

@@ -61,6 +61,4 @@ project:
     - pack: ARM::CMSIS-RTX@^5.9.0
     - pack: ARM::CMSIS-Compiler
     - pack: ARM::ethos-u-core-driver
-    - pack: AlifSemiconductor::AIPL
-    - pack: AlifSemiconductor::Dave2DDriver
     - pack: AlifSemiconductor::Ensemble
