@@ -21,7 +21,9 @@ using namespace arm_cmsis_stream;
 extern vStreamDriver_t Driver_vStreamAudioOut;
 #define vStream_AudioOut (&Driver_vStreamAudioOut)
 
+extern "C"{
 extern osThreadId_t tid_stream;
+}
 
 template <typename OUT, int outputSize>
 class VStreamAudioSink;
@@ -53,7 +55,8 @@ class VStreamAudioSink<sq15, outputSamples>
                                  VSTREAM_STEREO_SINK_BLOCK_COUNT * sizeof(sq15) * outputSamples,
                                  sizeof(sq15) * outputSamples);
 
-       
+        vStream_AudioOut->GetBlock();
+        vStream_AudioOut->ReleaseBlock();
     };
 
     ~VStreamAudioSink()
@@ -65,7 +68,7 @@ class VStreamAudioSink<sq15, outputSamples>
 
     int prepareForRunning() final
     {
-        if (this->willOverflow())
+        if (this->willUnderflow())
         {
             return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
         }

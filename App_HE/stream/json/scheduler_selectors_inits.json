@@ -1,5 +1,17 @@
 {
+  "VStreamAudioSink<sq15,512>": {
+    "isTemplate": true,
+    "selectors": []
+  },
   "VStreamAudioSource<sq15,512>": {
+    "isTemplate": true,
+    "selectors": []
+  },
+  "DeinterleaveStereo<sf32,512,float,512,float,512>": {
+    "isTemplate": true,
+    "selectors": []
+  },
+  "Duplicate<float,512,float,512>": {
     "isTemplate": true,
     "selectors": []
   },
@@ -7,7 +19,19 @@
     "isTemplate": true,
     "selectors": []
   },
+  "InterleaveStereo<float,512,float,512,sf32,512>": {
+    "isTemplate": true,
+    "selectors": []
+  },
+  "Mixer<float,512,float,512,float,512,float,512>": {
+    "isTemplate": true,
+    "selectors": []
+  },
   "Spectrogram<cf32,512>": {
+    "isTemplate": true,
+    "selectors": []
+  },
+  "RealToComplex<float,512,cf32,512>": {
     "isTemplate": true,
     "selectors": []
   },
@@ -15,11 +39,7 @@
     "isTemplate": true,
     "selectors": []
   },
-  "StereoToMono<sf32,512,float,512,float,512>": {
-    "isTemplate": true,
-    "selectors": []
-  },
-  "RealToComplex<float,512,cf32,512>": {
+  "Convert<sf32,512,sq15,512>": {
     "isTemplate": true,
     "selectors": []
   },

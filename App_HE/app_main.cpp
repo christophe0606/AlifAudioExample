@@ -22,7 +22,7 @@ extern "C"
 
 #include "cg_queue.hpp"
 
-#include "nodes/AppDisplay.hpp"
+#include "appnodes/AppDisplay.hpp"
 #include "nodes/VStreamVideoSource.hpp"
 
 #include "cg_queue.hpp"

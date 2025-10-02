@@ -9,12 +9,39 @@ digraph structs {
     edge [arrowsize="0.5",color="black",fontcolor="black",fontname="Times-Roman"]
 
 
+audioSink [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">audioSink<BR/>(VStreamAudioSink)</FONT></TD>
+  </TR>
+</TABLE>>];
+
 audioSource [label=<
 <TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
   <TR>
     <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">audioSource<BR/>(VStreamAudioSource)</FONT></TD>
   </TR>
 </TABLE>>];
+
+
+deinterleave [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD PORT="i"><FONT POINT-SIZE="12.0" COLOR="black">i</FONT></TD>
+    <TD ALIGN="CENTER" ROWSPAN="2"><FONT COLOR="black" POINT-SIZE="14.0">deinterleave<BR/>(DeinterleaveStereo)</FONT></TD>
+    <TD PORT="l"><FONT POINT-SIZE="12.0" COLOR="black">l</FONT></TD>
+  </TR>
+<TR>
+ 
+<TD></TD>
+<TD PORT="r"><FONT POINT-SIZE="12.0" COLOR="black">r</FONT></TD>
+</TR>
+
+</TABLE>>];
+
+dup0 [shape=point,label="dup0"]
+
+dup1 [shape=point,label="dup1"]
 
 fftLeft [label=<
 <TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
@@ -28,6 +55,38 @@ fftRight [label=<
   <TR>
     <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">fftRight<BR/>(CFFT)</FONT></TD>
   </TR>
+</TABLE>>];
+
+
+interleave [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD PORT="l"><FONT POINT-SIZE="12.0" COLOR="black">l</FONT></TD>
+    <TD ALIGN="CENTER" ROWSPAN="2"><FONT COLOR="black" POINT-SIZE="14.0">interleave<BR/>(InterleaveStereo)</FONT></TD>
+    <TD PORT="o"><FONT POINT-SIZE="12.0" COLOR="black">o</FONT></TD>
+  </TR>
+<TR>
+<TD PORT="r"><FONT POINT-SIZE="12.0" COLOR="black">r</FONT></TD>
+
+ 
+<TD></TD></TR>
+
+</TABLE>>];
+
+
+mixer [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD PORT="inl"><FONT POINT-SIZE="12.0" COLOR="black">inl</FONT></TD>
+    <TD ALIGN="CENTER" ROWSPAN="2"><FONT COLOR="black" POINT-SIZE="14.0">mixer<BR/>(Mixer)</FONT></TD>
+    <TD PORT="oul"><FONT POINT-SIZE="12.0" COLOR="black">oul</FONT></TD>
+  </TR>
+<TR>
+<TD PORT="inr"><FONT POINT-SIZE="12.0" COLOR="black">inr</FONT></TD>
+
+<TD PORT="our"><FONT POINT-SIZE="12.0" COLOR="black">our</FONT></TD>
+</TR>
+
 </TABLE>>];
 
 
@@ -62,29 +121,6 @@ spectrogramRight [label=<
 
 </TABLE>>];
 
-src_f32 [label=<
-<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
-  <TR>
-    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">src_f32<BR/>(Convert)</FONT></TD>
-  </TR>
-</TABLE>>];
-
-
-stereoToMono [label=<
-<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
-  <TR>
-    <TD PORT="i"><FONT POINT-SIZE="12.0" COLOR="black">i</FONT></TD>
-    <TD ALIGN="CENTER" ROWSPAN="2"><FONT COLOR="black" POINT-SIZE="14.0">stereoToMono<BR/>(StereoToMono)</FONT></TD>
-    <TD PORT="l"><FONT POINT-SIZE="12.0" COLOR="black">l</FONT></TD>
-  </TR>
-<TR>
- 
-<TD></TD>
-<TD PORT="r"><FONT POINT-SIZE="12.0" COLOR="black">r</FONT></TD>
-</TR>
-
-</TABLE>>];
-
 toComplexLeft [label=<
 <TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
   <TR>
@@ -96,6 +132,20 @@ toComplexRight [label=<
 <TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
   <TR>
     <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">toComplexRight<BR/>(RealToComplex)</FONT></TD>
+  </TR>
+</TABLE>>];
+
+to_f32 [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">to_f32<BR/>(Convert)</FONT></TD>
+  </TR>
+</TABLE>>];
+
+to_q15 [label=<
+<TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">to_q15<BR/>(Convert)</FONT></TD>
   </TR>
 </TABLE>>];
 
@@ -142,25 +192,13 @@ videoSource [label=<
 
 
 
-audioSource:i -> src_f32:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<sq15(512)>
+audioSource:i -> to_f32:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<sq15(512)>
 ,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>
 ,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>]
 
-src_f32:i -> stereoToMono:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<sf32(512)>
-,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
-</TD></TR></TABLE>>
-,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
-</TD></TR></TABLE>>]
-
-stereoToMono:l -> winLeft:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
-,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
-</TD></TR></TABLE>>
-,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
-</TD></TR></TABLE>>]
-
-stereoToMono:r -> winRight:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+to_f32:i -> deinterleave:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<sf32(512)>
 ,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>
 ,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
@@ -201,6 +239,66 @@ fftRight:i -> spectrogramRight:i [style="solid",color="black",fontsize="12.0",fo
 </TD></TR></TABLE>>
 ,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
 </TD></TR></TABLE>>]
+
+mixer:oul -> interleave:l [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>]
+
+mixer:our -> interleave:r [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>]
+
+interleave:o -> to_q15:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<sf32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>]
+
+to_q15:i -> audioSink:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<sq15(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>]
+
+deinterleave:l ->  
+dup0 [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>]
+
+ 
+dup0 -> winLeft:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>
+]
+
+ 
+dup0 -> mixer:inl [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>
+]
+
+deinterleave:r ->  
+dup1 [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+
+,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>]
+
+ 
+dup1 -> winRight:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>
+]
+
+ 
+dup1 -> mixer:inr [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<f32(512)>
+,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >512</FONT>
+</TD></TR></TABLE>>
+]
 
 
 

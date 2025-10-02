@@ -1,5 +1,5 @@
 from cmsis_stream.cg.scheduler import GenericNode
-from .AppTypes import *
+from .NodeTypes import *
 
 
 class CFFT(GenericNode):
@@ -12,3 +12,8 @@ class CFFT(GenericNode):
     def typeName(self):
         """The name of the C++ class implementing this node"""
         return "CFFT"
+    
+    @property
+    def folder(self):
+        """The folder containing the C++ class implementing this node"""
+        return "nodes"

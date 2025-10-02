@@ -17,20 +17,24 @@ extern "C"
 
 
 /* Node identifiers */
-#define NB_IDENTIFIED_NODES 13
-#define AUDIOSOURCE_ID 0
-#define FFTLEFT_ID 1
-#define FFTRIGHT_ID 2
-#define SPECTROGRAMLEFT_ID 3
-#define SPECTROGRAMRIGHT_ID 4
-#define SRC_F32_ID 5
-#define STEREOTOMONO_ID 6
-#define TOCOMPLEXLEFT_ID 7
-#define TOCOMPLEXRIGHT_ID 8
-#define WINLEFT_ID 9
-#define WINRIGHT_ID 10
-#define DISPLAY_ID 11
-#define VIDEOSOURCE_ID 12
+#define NB_IDENTIFIED_NODES 17
+#define AUDIOSINK_ID 0
+#define AUDIOSOURCE_ID 1
+#define DEINTERLEAVE_ID 2
+#define FFTLEFT_ID 3
+#define FFTRIGHT_ID 4
+#define INTERLEAVE_ID 5
+#define MIXER_ID 6
+#define SPECTROGRAMLEFT_ID 7
+#define SPECTROGRAMRIGHT_ID 8
+#define TOCOMPLEXLEFT_ID 9
+#define TOCOMPLEXRIGHT_ID 10
+#define TO_F32_ID 11
+#define TO_Q15_ID 12
+#define WINLEFT_ID 13
+#define WINRIGHT_ID 14
+#define DISPLAY_ID 15
+#define VIDEOSOURCE_ID 16
 
 
 extern CStreamNode* get_scheduler_node(int32_t nodeID);

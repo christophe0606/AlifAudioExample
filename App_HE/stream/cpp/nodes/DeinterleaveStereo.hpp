@@ -11,14 +11,14 @@ using namespace arm_cmsis_stream;
 template <typename IN, int inputSize,
           typename OUT1, int outputSize1,
           typename OUT2, int outputSize2>
-class StereoToMono;
+class DeinterleaveStereo;
 
 template <int inputSamples>
-class StereoToMono<sf32, inputSamples, float32_t, inputSamples, float32_t, inputSamples> : public GenericNode12<sf32, inputSamples, float32_t, inputSamples, float32_t, inputSamples>
+class DeinterleaveStereo<sf32, inputSamples, float32_t, inputSamples, float32_t, inputSamples> : public GenericNode12<sf32, inputSamples, float32_t, inputSamples, float32_t, inputSamples>
 {
 
   public:
-    StereoToMono(FIFOBase<sf32> &src, FIFOBase<float32_t> &left, FIFOBase<float32_t> &right)
+    DeinterleaveStereo(FIFOBase<sf32> &src, FIFOBase<float32_t> &left, FIFOBase<float32_t> &right)
         : GenericNode12<sf32, inputSamples, float32_t, inputSamples, float32_t, inputSamples>(src, left, right) {};
 
     int prepareForRunning() final

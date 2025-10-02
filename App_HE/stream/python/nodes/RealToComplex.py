@@ -1,5 +1,5 @@
 from cmsis_stream.cg.scheduler import GenericNode,F32,Q15
-from .AppTypes import *
+from .NodeTypes import *
 
 
 class RealToComplex(GenericNode):
@@ -20,3 +20,8 @@ class RealToComplex(GenericNode):
     def typeName(self):
         """The name of the C++ class implementing this node"""
         return "RealToComplex"
+    
+    @property
+    def folder(self):
+        """The folder containing the C++ class implementing this node"""
+        return "nodes"

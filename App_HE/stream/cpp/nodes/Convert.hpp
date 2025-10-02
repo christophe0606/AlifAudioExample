@@ -41,3 +41,30 @@ class Convert<sq15, inputSamples, sf32, inputSamples> : public GenericNode<sq15,
         return (CG_SUCCESS);
     };
 };
+
+template <int inputSamples>
+class Convert<sf32, inputSamples, sq15, inputSamples> : public GenericNode<sf32, inputSamples, sq15, inputSamples>
+{
+  public:
+    Convert(FIFOBase<sf32> &src, FIFOBase<sq15> &dst)
+        : GenericNode<sf32, inputSamples, sq15, inputSamples>(src, dst) {};
+
+    int prepareForRunning() final
+    {
+        if ((this->willOverflow()) || (this->willUnderflow()))
+        {
+            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
+        }
+
+        return (0);
+    };
+
+    int run() final
+    {
+        sq15 *o = this->getWriteBuffer();
+        sf32 *in = this->getReadBuffer();
+        arm_float_to_q15((float32_t *)in, (q15_t *)o, 2 * inputSamples);
+
+        return (CG_SUCCESS);
+    };
+};

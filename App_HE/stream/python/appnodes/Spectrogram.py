@@ -1,6 +1,5 @@
 from cmsis_stream.cg.scheduler import GenericSink
-from .AppTypes import *
-
+from nodes import *
 
     
 class Spectrogram(GenericSink):
@@ -9,6 +8,11 @@ class Spectrogram(GenericSink):
         self.addInput("i",F32_COMPLEX,nbSamples)
         self.addEventOutput()
 
+    @property
+    def folder(self):
+        """The folder where the C++ implementation of this node is located"""
+        return "appnodes"
+    
     @property
     def typeName(self):
         """The name of the C++ class implementing this node"""

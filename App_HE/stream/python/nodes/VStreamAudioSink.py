@@ -1,6 +1,6 @@
 from cmsis_stream.cg.scheduler import GenericSink
 
-from .AppTypes import *
+from .NodeTypes import *
 
 class VStreamAudioSink(GenericSink):
     def __init__(self,name,outLength):
@@ -12,3 +12,8 @@ class VStreamAudioSink(GenericSink):
     def typeName(self):
         """The name of the C++ class implementing this node"""
         return "VStreamAudioSink"
+    
+    @property
+    def folder(self):
+        """The folder containing the C++ class implementing this node"""
+        return "nodes"

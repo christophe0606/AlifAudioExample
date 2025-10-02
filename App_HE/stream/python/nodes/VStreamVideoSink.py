@@ -1,6 +1,6 @@
 from cmsis_stream.cg.scheduler import GenericSink
 
-from .AppTypes import *
+from .NodeTypes import *
 
 class VStreamVideoSink(GenericSink):
     def __init__(self,name):

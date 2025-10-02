@@ -8,6 +8,8 @@
 
 #define NB_BINS 128
 
+#define SAMPLE_RATE 16000
+
 #include <stdio.h>
 #include <stdint.h>
 

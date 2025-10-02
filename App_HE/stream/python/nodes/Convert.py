@@ -11,3 +11,8 @@ class Convert(GenericNode):
     def typeName(self):
         """The name of the C++ class implementing this node"""
         return "Convert"
+    
+    @property
+    def folder(self):
+        """The folder containing the C++ class implementing this node"""
+        return "nodes"
