@@ -12,6 +12,10 @@ project:
       files:
         - file: stream/cpp/cg_queue.cpp
         - file: stream/scheduler/scheduler.cpp
+
+    - group: Display
+      files:
+        - file: display/lcd.c
        
 
   add-path:
@@ -19,6 +23,7 @@ project:
     - stream/cpp 
     - stream
     - stream/scheduler
+    - display
 
   # List components to use for your application.
   # A software component is a re-usable unit that may be configurable.

@@ -3,6 +3,7 @@
 #include "RTE_Components.h"
 #include "config.h"
 #include "m-profile/armv7m_cachel1.h"
+#include "soc.h"
 #include <utility>
 #include <variant>
 
@@ -18,144 +19,110 @@
 
 extern "C"
 {
-#include "cmsis_os2.h"
-#include "cmsis_vstream.h"
+#include "lcd.h"
 #include "config.h"
 }
 
 using namespace arm_cmsis_stream;
 
-extern vStreamDriver_t Driver_vStreamVideoOut;
-#define vStream_VideoOut (&Driver_vStreamVideoOut)
-
+extern displayDriver_t Driver_display;
+#define lcd (&Driver_display)
 
 class VStreamVideoSink : public StreamNode
 {
+    static void VideoSink_Event_Callback(uint32_t event)
+    {
+        if (event & DISPLAY_EVENT_NEW_FRAME)
+        {
+
+            
+        }
+
+    }
+
   public:
     VStreamVideoSink()
         : StreamNode()
     {
 
-        vStreamStatus_t status;
+        displayStatus_t status;
 
-        vStream_VideoOut->Initialize(VideoSink_Event_Callback);
+        lcd->Initialize(VStreamVideoSink::VideoSink_Event_Callback);
 
         /* Set Input Video buffer */
-        if (vStream_VideoOut->SetBuf(displayFrame, DISPLAY_IMAGE_SIZE, DISPLAY_IMAGE_SIZE) != VSTREAM_OK)
+        if (lcd->SetBuf(LCD_Frame, DISPLAY_IMAGE_SIZE) != DISPLAY_OK)
         {
             ERROR_PRINT("Failed to set buffer for video output\n");
         }
+    }
 
-        
-       
-        
-       
+    void *renderingFrame() const
+    {
+        return lcd->GetRenderingBlock();
     }
 
     virtual ~VStreamVideoSink()
     {
-        if (vStream_VideoOut->Stop() != VSTREAM_OK)
+        if (lcd->Stop() != DISPLAY_OK)
         {
             ERROR_PRINT("Failed to stop video output\n");
         }
 
-        if (vStream_VideoOut->Uninitialize() != VSTREAM_OK)
+        if (lcd->Uninitialize() != DISPLAY_OK)
         {
             ERROR_PRINT("Failed to uninitialize video output\n");
         }
     };
 
-
     virtual void drawFrame() = 0;
 
     // The node was asked to render a new frame
-    void
+    bool
     renderNewFrame()
     {
 
         if (inRender.load())
         {
             DEBUG_PRINT("Already in render\n");
-            return;
+            return false;
         }
 
         inRender.store(true);
 
-       
-        vStreamStatus_t status;
-        do
-        {
-            status = vStream_VideoOut->GetStatus();
-        } while (status.active == 1U);
-        
         this->drawFrame();
-        SCB_CleanInvalidateDCache_by_Addr(renderingFrame, DISPLAY_IMAGE_SIZE);
-        switchBuffers();
-
-       
+        
         inRender.store(false);
 
-        if (vStream_VideoOut->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
+        displayStatus_t status;
+        do
+        {
+            status = lcd->GetStatus();
+        } while (status.active == 1U);
+
+        lcd->SwitchBuffers();
+
+        if (lcd->Start() != DISPLAY_OK)
         {
             ERROR_PRINT("Failed to start LCD output\n");
         }
+        return true;
     }
 
     cg_status init() override
     {
-        SCB_CleanInvalidateDCache_by_Addr(renderingFrame, DISPLAY_IMAGE_SIZE);
-
-        switchBuffers();
-        if (vStream_VideoOut->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
+        drawFrame();
+        lcd->SwitchBuffers();
+        if (lcd->Start() != DISPLAY_OK)
         {
             ERROR_PRINT("Failed to start LCD output\n");
         }
         return CG_SUCCESS;
     }
 
-    void *displayBuffer()
-    {
-        return (displayFrame.load());
-    }
-
-    void switchBuffers()
-    {
-        frameIndex = (frameIndex == kBuffer0) ? kBuffer1 : kBuffer0;
-        switch (frameIndex)
-        {
-        case kBuffer0:
-            renderingFrame = (uint16_t *)LCD_Frame;
-            displayFrame.store((uint16_t *)(LCD_Frame + DISPLAY_IMAGE_SIZE));
-            break;
-        case kBuffer1:
-            renderingFrame = (uint16_t *)(LCD_Frame + DISPLAY_IMAGE_SIZE);
-            displayFrame.store((uint16_t *)LCD_Frame);
-            break;
-        }
-
-        setDisplayBuffer();
-        vStream_VideoOut->GetBlock();
-        vStream_VideoOut->ReleaseBlock();
-    }
-
+   
+    
   protected:
     std::atomic<bool> inRender{false};
 
-    void setDisplayBuffer()
-    {
-        if (vStream_VideoOut->SetBuf(displayFrame, DISPLAY_IMAGE_SIZE, DISPLAY_IMAGE_SIZE) != VSTREAM_OK)
-        {
-            ERROR_PRINT("Failed to set buffer for video output\n");
-        }
-    }
-
-    enum kRenderingBuffer
-    {
-        kBuffer0 = 0,
-        kBuffer1 = 1
-    };
-
-    kRenderingBuffer frameIndex{kBuffer0};
-    uint16_t *renderingFrame{(uint16_t *)LCD_Frame};
-    std::atomic<uint16_t *> displayFrame{(uint16_t *)(LCD_Frame + DISPLAY_IMAGE_SIZE)};
+    
 };

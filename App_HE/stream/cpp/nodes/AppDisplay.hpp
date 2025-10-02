@@ -59,6 +59,7 @@ class AppDisplay : public VStreamVideoSink
 
     void fillRectangle(int x, int y, int width, int height, uint16_t color)
     {
+        uint16_t *renderingFrame = (uint16_t *)this->renderingFrame();
         if (x < 0)
         {
             width += x;
@@ -94,6 +95,7 @@ class AppDisplay : public VStreamVideoSink
 
     void strokeRectangle(int x, int y, int width, int height, uint16_t color)
     {
+        uint16_t *renderingFrame = (uint16_t *)this->renderingFrame();
         bool drawTop = true;
         bool drawBottom = true;
         bool drawLeft = true;
@@ -206,6 +208,7 @@ class AppDisplay : public VStreamVideoSink
     void drawFrame() final override
     {
 
+        uint16_t *renderingFrame = (uint16_t *)this->renderingFrame();
         memset(renderingFrame, 0xFF, DISPLAY_IMAGE_SIZE);
 
         // fillRectangle(0,0,CAMERA_FRAME_WIDTH,CAMERA_FRAME_HEIGHT,0x03F << 5);
@@ -217,10 +220,10 @@ class AppDisplay : public VStreamVideoSink
         strokeRectangle(PADDING_LEFT, PADDING_TOP, boxWidth, boxHeight, 0x00);
         strokeRectangle(PADDING_LEFT + boxWidth + HORIZONTAL_SEPARATION, PADDING_TOP, boxWidth, boxHeight, 0x00);
        
-        if (hasCameraFrame)
+        if (currentCameraFrame)
         {
 #if 1
-            currentCameraFrame.lock_shared([this](CG_MUTEX_ERROR_TYPE error, const Tensor<uint16_t> &tensor)
+            currentCameraFrame.lock_shared([renderingFrame,this](CG_MUTEX_ERROR_TYPE error, const Tensor<uint16_t> &tensor)
                                            {
             if (!CG_MUTEX_HAS_ERROR(error))
             {
@@ -286,15 +289,13 @@ class AppDisplay : public VStreamVideoSink
   protected:
     void processCameraFrame(TensorPtr<uint16_t> &&frame)
     {
-        hasCameraFrame = true;
         currentCameraFrame = std::move(frame);
 
         // Render new frame each time a camera frame is received
-        this->renderNewFrame();
+        bool canRender = this->renderNewFrame();
 
         // Release the frame so that camera get new one
-        currentCameraFrame = std::move(TensorPtr<uint16_t>()); // Release the frame so that camera get new one
-        hasCameraFrame = false;
+        currentCameraFrame.reset();
     }
 
     void processLeftSpectrogram(TensorPtr<float> &&frame)
@@ -307,7 +308,6 @@ class AppDisplay : public VStreamVideoSink
         rightSpectrogram = std::move(frame);
     }
 
-    bool hasCameraFrame = false;
     TensorPtr<uint16_t> currentCameraFrame;
     TensorPtr<float> leftSpectrogram;
     TensorPtr<float> rightSpectrogram;

@@ -96,6 +96,12 @@ class CMSISLock
         return error;
     }
 
+    osStatus_t tryAcquire()
+    {
+        error = osMutexAcquire(mutex.id(), 0);
+        return error;
+    }
+
     ~CMSISLock()
     {
         if (error == osOK)

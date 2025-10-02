@@ -86,6 +86,15 @@ class VStreamAudioSource<sq15, outputSamples>
 
     int run() final
     {
+        if (!started)
+        {
+            started = true;
+            if (vStream_AudioIn->Start(VSTREAM_MODE_CONTINUOUS) != VSTREAM_OK)
+            {
+                 ERROR_PRINT("vStream_AudioIn Start error\n");
+                 return(CG_INIT_FAILURE);
+            }
+        }
         osThreadFlagsWait(VSTREAM_AUDIO_SOURCE_BLOCK_EVT, osFlagsWaitAny, osWaitForever);
         
         sq15 *buf = (sq15 *)vStream_AudioIn->GetBlock();
@@ -104,5 +113,6 @@ class VStreamAudioSource<sq15, outputSamples>
     };
 
   protected:
+    bool started{false};
     sq15 *stereoBuffer;
 };

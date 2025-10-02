@@ -11,13 +11,11 @@
 #include "cg_enums.h"
 #include "custom.hpp"
 
-
 extern "C"
 {
 #include "cmsis_os2.h"
 #include "cmsis_vstream.h"
 #include "config.h"
-
 }
 
 using namespace arm_cmsis_stream;
@@ -79,6 +77,12 @@ class VStreamVideoSource : public StreamNode
         }
         else
         {
+            vStreamStatus_t status;
+            do
+            {
+                status = vStream_VideoIn->GetStatus();
+            } while (status.active == 1U);
+
             if (vStream_VideoIn->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
             {
                 ERROR_PRINT("Failed to start video capture\n");
@@ -94,7 +98,7 @@ class VStreamVideoSource : public StreamNode
             uint8_t *inFrame = (uint8_t *)vStream_VideoIn->GetBlock();
             if (inFrame != nullptr)
             {
-                SCB_InvalidateDCache_by_Addr(inFrame, CAMERA_FRAME_SIZE);
+                //SCB_InvalidateDCache_by_Addr(inFrame, CAMERA_FRAME_SIZE);
 
                 DEBUG_PRINT("Send frame\n");
                 UniquePtr<uint16_t> rgb_buf((uint16_t *)inFrame, release_video_frame);
@@ -102,7 +106,7 @@ class VStreamVideoSource : public StreamNode
                                                                          cg_tensor_dims_t{CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH},
                                                                          std::move(rgb_buf));
 
-                ev0.sendAsync(kHighPriority, kValue, std::move(t)); // Send the event to the subscribed nodes
+                ev0.sendSync(kHighPriority, kValue, std::move(t)); // Send the event to the subscribed nodes
             }
             else
             {

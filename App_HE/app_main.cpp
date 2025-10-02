@@ -24,7 +24,6 @@ extern "C"
 
 #include "nodes/AppDisplay.hpp"
 #include "nodes/VStreamVideoSource.hpp"
-#include "nodes/VStreamAudioSource.hpp"
 
 #include "cg_queue.hpp"
 
@@ -93,28 +92,24 @@ int init_memory_pools()
 
 void VideoSrc_Event_Callback(uint32_t event)
 {
+    if (event & VSTREAM_EVENT_EOS)
+    {
+        ERROR_PRINT("Camera end of stream\n");
+        return;
+    }
+
     if (event & VSTREAM_EVENT_DATA)
     {
         /* LCD frame is available */
         if (tid_interrupts != NULL)
             osThreadFlagsSet(tid_interrupts, VIDEO_SRC_EVT);
     }
+    
 }
 
 
-AppDisplay *disp = nullptr;
 VStreamVideoSource *video_src = nullptr;
 
-void VideoSink_Event_Callback(uint32_t event)
-{
-    if (event & VSTREAM_EVENT_DATA)
-    {
-        
-        /* Video frame is available in camera frame buffer */
-        // if (tid_interrupts != NULL)
-        //     osThreadFlagsSet(tid_interrupts, VIDEO_SRC_EVT);
-    }
-}
 
 void interrupt_thread(void *arg)
 {
@@ -170,17 +165,7 @@ void stream_thread(void *arg)
     uint32_t nb_iter;
     int error;
     DEBUG_PRINT("Stream thread started\n");
-    /* Start audio 
-
-    It is not done in the audio node because the time between node
-    creations and start of scheduler may be too big and
-    it may lead to buffer overflow for audio
     
-    */
-    if (vStream_AudioIn->Start(VSTREAM_MODE_CONTINUOUS) != VSTREAM_OK)
-    {
-            ERROR_PRINT("vStream_AudioIn Start error\n");
-    }
 
     nb_iter = scheduler(&error);
     if (error != 0)
@@ -198,10 +183,7 @@ err_stream:
 int app_main(void)
 {
     CStreamNode *c_video_src = nullptr;
-    CStreamNode *c_disp = nullptr;
-    // init_camera();// Introduces heavy flickering on UI although
-    //  camera is not started and just initialized !
-    // configure_display_and_2d();
+    
 
     const osThreadAttr_t dispAttr = {
         .stack_size = 4096,
@@ -219,7 +201,6 @@ int app_main(void)
                                       .priority = osPriorityRealtime};
     osKernelInitialize();
 
-    // tid_display = osThreadNew(display_thread, NULL, &dispAttr);
     tid_interrupts = osThreadNew(interrupt_thread, NULL, &interruptAttr);
 
     cg_eventThread = osThreadNew(event_thread, NULL, &eventAttr);
@@ -262,20 +243,7 @@ int app_main(void)
     video_src = nullptr;
 #endif
 
-#if defined(DISPLAY_ID)
-    c_disp = get_scheduler_node(DISPLAY_ID);
 
-    if (c_disp == nullptr)
-    {
-        ERROR_PRINT("No display node found\n");
-        osThreadExit();
-    }
-
-    disp = reinterpret_cast<AppDisplay *>(c_disp->obj);
-
-#else
-    disp = nullptr;
-#endif
 
     DEBUG_PRINT("Scheduler initialized successfully\n");
 

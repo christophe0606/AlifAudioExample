@@ -538,6 +538,37 @@ namespace arm_cmsis_stream
         std::shared_ptr<CG_MUTEX> mutex;
 
     public:
+
+        explicit operator bool() const noexcept { return (obj != nullptr) ; }
+        bool operator==(std::nullptr_t) const noexcept { return obj == nullptr; }
+        bool operator!=(std::nullptr_t) const noexcept { return (obj != nullptr); }
+
+        void reset() noexcept
+        {
+            if (mutex)
+            {
+                bool wasReset = false;
+                CG_MUTEX_ERROR_TYPE error;
+                CG_ENTER_CRITICAL_SECTION(*mutex, error);
+                if (!CG_MUTEX_HAS_ERROR(error))
+                {
+                    obj = nullptr;
+                    wasReset = true;
+                }
+                
+                CG_EXIT_CRITICAL_SECTION(*mutex, error);
+                if (wasReset)
+                {
+                    mutex = nullptr;
+                }
+            }
+            else
+            {
+                obj = nullptr;
+            }
+        }
+
+        
         long use_count() const noexcept
         {
             if (obj)
@@ -564,11 +595,7 @@ namespace arm_cmsis_stream
             }
         }
 
-        template <typename Func>
-        auto debug(Func &&f) -> decltype(f(CG_MUTEX_ERROR_TYPE(), false, std::declval<T &>()))
-        {
-        }
-
+        
         // Exclusive (write) access
         template <typename Func,typename Z=T>
         auto lock(Func &&f) -> decltype(f(CG_MUTEX_ERROR_TYPE(), false, std::declval<Z &>()))

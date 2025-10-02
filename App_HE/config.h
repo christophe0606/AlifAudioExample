@@ -169,7 +169,7 @@ extern void VideoSrc_Event_Callback(uint32_t event);
 
 /* Define display image size */
 #define DISPLAY_IMAGE_SIZE     (DISPLAY_FRAME_WIDTH * DISPLAY_FRAME_HEIGHT * DISPLAY_FRAME_COLOR_BYTES)
-#define DISPLAY_BUFFER_SIZE    (DISPLAY_IMAGE_SIZE)
+#define DISPLAY_BUFFER_SIZE    (2 * DISPLAY_IMAGE_SIZE)
 
 extern uint8_t CAM_Frame[CAMERA_BUFFER_SIZE];
 

@@ -35,7 +35,11 @@ class VStreamAudioSink<sq15, outputSamples>
     {
         (void)event;
 
-        osThreadFlagsSet(tid_stream, VSTREAM_AUDIO_SINK_BLOCK_EVT);
+        if (event & VSTREAM_EVENT_DATA)
+        {
+           if (tid_stream)
+              osThreadFlagsSet(tid_stream, VSTREAM_AUDIO_SINK_BLOCK_EVT);
+        }
     }
 
     VStreamAudioSink(FIFOBase<sq15> &dst)
@@ -49,8 +53,7 @@ class VStreamAudioSink<sq15, outputSamples>
                                  VSTREAM_STEREO_SINK_BLOCK_COUNT * sizeof(sq15) * outputSamples,
                                  sizeof(sq15) * outputSamples);
 
-        /* Start audio receiver */
-        vStream_AudioOut->Start(VSTREAM_MODE_CONTINUOUS);
+       
     };
 
     ~VStreamAudioSink()
@@ -72,15 +75,26 @@ class VStreamAudioSink<sq15, outputSamples>
 
     int run() final
     {
+        if (!started)
+        {
+            started = true;
+            if (vStream_AudioOut->Start(VSTREAM_MODE_CONTINUOUS) != VSTREAM_OK)
+            {
+                 ERROR_PRINT("vStream_AudioOut Start error\n");
+                 return(CG_INIT_FAILURE);
+            }
+        }
         osThreadFlagsWait(VSTREAM_AUDIO_SINK_BLOCK_EVT, osFlagsWaitAny, osWaitForever);
         sq15 *buf = (sq15 *)vStream_AudioOut->GetBlock();
         sq15 *input = this->getReadBuffer();
-        memcpy(buf, input, outputSamples * sizeof(sq15));
+        if (buf)
+            memcpy(buf, input, outputSamples * sizeof(sq15));
         vStream_AudioOut->ReleaseBlock();
 
         return (CG_SUCCESS);
     };
 
   protected:
+    bool started{false};
     sq15 *stereoBuffer;
 };
