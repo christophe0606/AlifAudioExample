@@ -15,6 +15,7 @@ extern "C"
 {
 #include "cmsis_os2.h"
 #include "cmsis_vstream.h"
+#include "debug.h"
 #include "config.h"
 }
 
@@ -24,8 +25,8 @@ const osThreadAttr_t videoSrcAttr = {
     .stack_size = 4096,
     .priority = osPriorityHigh};
 
-extern vStreamDriver_t Driver_vStreamVideoIn;
-#define vStream_VideoIn (&Driver_vStreamVideoIn)
+extern vDbgStreamDriver_t Driver_vDbgStreamVideoIn;
+#define vStream_VideoIn (&Driver_vDbgStreamVideoIn)
 
 #define VSTREAM_VIDEO_SOURCE_BLOCK_EVT (0x1)
 
@@ -42,11 +43,13 @@ class VStreamVideoSource : public StreamNode
         if (vStream_VideoIn->SetBuf(CAM_Frame, sizeof(CAM_Frame), CAMERA_FRAME_SIZE) != VSTREAM_OK)
         {
             ERROR_PRINT("Failed to set buffer for video input\n");
+            PrintErrors(vStream_VideoIn->ErrorCode());
         }
 
         if (vStream_VideoIn->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
         {
             ERROR_PRINT("Failed to start video capture\n");
+            PrintErrors(vStream_VideoIn->ErrorCode());
         }
     }
 
@@ -55,11 +58,13 @@ class VStreamVideoSource : public StreamNode
         if (vStream_VideoIn->Stop() != VSTREAM_OK)
         {
             ERROR_PRINT("Failed to stop video input\n");
+            PrintErrors(vStream_VideoIn->ErrorCode());
         }
 
         if (vStream_VideoIn->Uninitialize() != VSTREAM_OK)
         {
             ERROR_PRINT("Failed to uninitialize video input\n");
+            PrintErrors(vStream_VideoIn->ErrorCode());
         }
     };
 
@@ -74,6 +79,7 @@ class VStreamVideoSource : public StreamNode
         if (vStream_VideoIn->ReleaseBlock() != VSTREAM_OK)
         {
             ERROR_PRINT("Failed to release video input frame\n");
+            PrintErrors(vStream_VideoIn->ErrorCode());
         }
         else
         {
@@ -86,6 +92,7 @@ class VStreamVideoSource : public StreamNode
             if (vStream_VideoIn->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
             {
                 ERROR_PRINT("Failed to start video capture\n");
+                PrintErrors(vStream_VideoIn->ErrorCode());
             }
         }
     }

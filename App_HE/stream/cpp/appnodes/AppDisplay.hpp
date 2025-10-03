@@ -209,7 +209,7 @@ class AppDisplay : public VStreamVideoSink
     {
 
         uint16_t *renderingFrame = (uint16_t *)this->renderingFrame();
-        memset(renderingFrame, 0xFF, DISPLAY_IMAGE_SIZE);
+        memset(renderingFrame, 0x00, DISPLAY_IMAGE_SIZE);
 
         // fillRectangle(0,0,CAMERA_FRAME_WIDTH,CAMERA_FRAME_HEIGHT,0x03F << 5);
         // Draw spectrograms
