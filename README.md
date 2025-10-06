@@ -40,7 +40,7 @@ Next steps:
 
 The CMSIS-Stream graph executed by the demo:
 
-![CMSIS Stream graph](App_HE\stream\scheduler\graph.png)
+![CMSIS Stream graph](App_HE/stream/scheduler/graph.png)
 
 The audio sink is a debug one.
 To test with the real audio output use `debug_create.py` script instead of `create.py` to have a simple debug graph with only a sine generator and the audio output.
