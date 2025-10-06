@@ -193,7 +193,7 @@ FIFO<float,FIFOSIZE17,1,0> *fifo17;
 } fifos_t;
 
 typedef struct {
-    NullSink<sq15,512> *audioSink;
+    VStreamAudioSink<sq15,512> *audioSink;
     VStreamAudioSource<sq15,512> *audioSource;
     DeinterleaveStereo<sf32,512,float,512,float,512> *deinterleave;
     Duplicate<float,512,float,512> *dup0;
@@ -330,7 +330,7 @@ int init_scheduler()
     CG_BEFORE_NODE_INIT;
     cg_status initError;
 
-    nodes.audioSink = new (std::nothrow) NullSink<sq15,512>(*(fifos.fifo11));
+    nodes.audioSink = new (std::nothrow) VStreamAudioSink<sq15,512>(*(fifos.fifo11),5);
     if (nodes.audioSink==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);

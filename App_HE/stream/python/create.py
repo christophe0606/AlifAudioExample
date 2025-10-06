@@ -11,7 +11,7 @@ FFT_SIZE = 512
 
 # Use CMSIS VStream to connect to microphones
 src = VStreamAudioSource("audioSource",AUDIO_BLOCK)
-speaker = NullSink("audioSink",AUDIO_BLOCK)
+speaker = VStreamAudioSink("audioSink",AUDIO_BLOCK)
 video = VStreamVideoSource("videoSource")
 
 # Debug source can be used instead to generate a sine

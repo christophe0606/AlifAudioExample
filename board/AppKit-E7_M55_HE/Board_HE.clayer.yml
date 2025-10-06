@@ -62,6 +62,7 @@ layer:
   components:
     - component: BSP:External peripherals:CAMERA Sensor MT9M114
     - component: BSP:External peripherals:ILI9806E LCD panel
+    - component: BSP:External peripherals:WM8904 CODEC
 
     - component: CMSIS:CORE
 

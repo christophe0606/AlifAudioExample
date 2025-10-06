@@ -34,6 +34,8 @@
 #define RTE_Drivers_CAMERA_SENSOR_MT9M114            /* Driver CAMERA Sensor */
 /* AlifSemiconductor::BSP:External peripherals:ILI9806E LCD panel@2.0.0 */
 #define RTE_Drivers_MIPI_DSI_ILI9806E_PANEL    /* Driver ILI9806E LCD panel*/
+/* AlifSemiconductor::BSP:External peripherals:WM8904 CODEC@2.0.0 */
+#define RTE_Drivers_WM8904_CODEC   1           /* Driver */
 /* AlifSemiconductor::CMSIS Driver:GPIO@1.0.0 */
 #define RTE_Drivers_GPIO   1           /* Driver GPIO */
 /* AlifSemiconductor::CMSIS Driver:I2C@2.0.0 */
