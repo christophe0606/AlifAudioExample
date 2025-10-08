@@ -126,11 +126,11 @@ void interrupt_thread(void *arg)
         uint32_t res = osThreadFlagsWait(VIDEO_SRC_EVT, osFlagsWaitAny, osWaitForever);
         if (video_src && (res & VIDEO_SRC_EVT))
         {
-            Message msg{
-                LocalDestination{video_src, 0},
-                Event(kDo, kHighPriority)};
+            auto destination = LocalDestination{video_src, 0};
+            auto evt = Event(kDo, kHighPriority);
+            
             DEBUG_PRINT("Push event for video src\n");
-            bool ok = EventQueue::cg_eventQueue->push(std::move(msg));
+            bool ok = EventQueue::cg_eventQueue->push(destination, std::move(evt));
             if (!ok)
             {
                 ERROR_PRINT("Event queue overflow for video src\n");

@@ -79,10 +79,14 @@ class Spectrogram<cf32, inputSamples>
         UniquePtr<float> tensorData(NB_BINS);
         memcpy(tensorData.get(), bins, sizeof(bins));
 
-        TensorPtr<float> t = TensorPtr<float>::create_with((uint8_t)1,
-                                                           cg_tensor_dims_t{NB_BINS},
-                                                           std::move(tensorData));
-        bool status = ev0.sendAsync(kNormalPriority, kValue, std::move(t)); // Send the event to the subscribed nodes
+        // Spectrogram frames have lower priority than video frames and may be delayed
+        // by video frame processing.
+        // To avoid an overflow of the event queue, spectrogram events are set to
+        // live for 40 ms only (refresh rate is 32 ms per audio packet).
+        // So old spectrogram events are discarded by the event queue and not sent to the display
+        // node.
+        TensorPtr<float> t = TensorPtr<float>::create_with(NB_BINS,std::move(tensorData));
+        bool status = ev0.sendAsyncWithTTL(kNormalPriority, kValue, 40, std::move(t)); // Send the event to the subscribed nodes
 
         if (!status)
         {

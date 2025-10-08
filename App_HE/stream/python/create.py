@@ -12,7 +12,12 @@ FFT_SIZE = 512
 
 # Use CMSIS VStream to connect to microphones
 src = VStreamAudioSource("audioSource",AUDIO_BLOCK)
-speaker = VStreamAudioSink("audioSink",AUDIO_BLOCK)
+# With video there are underflow or overflow in audio
+# vStream may not be flexible enough and using SAI 
+# directly may be better to support more
+# constrained environment
+#speaker = VStreamAudioSink("audioSink",3*AUDIO_BLOCK)
+speaker = NullSink("audioSink",3*AUDIO_BLOCK)
 video = VStreamVideoSource("videoSource")
 
 src_left = SRC("srcLeft",AUDIO_BLOCK)
@@ -56,9 +61,9 @@ the_graph.connect(to_complex_right.o,fft_right.i)
 the_graph.connect(fft_left.o,spectrogram_left.i)
 the_graph.connect(fft_right.o,spectrogram_right.i)
 
-the_graph.connect(spectrogram_left[0],display[0])
-the_graph.connect(spectrogram_right[0],display[1])
-the_graph.connect(video[0],display[2])
+the_graph.connect(spectrogram_left["oev0"],display["iev0"])
+the_graph.connect(spectrogram_right["oev0"],display["iev1"])
+the_graph.connect(video["oev0"],display["iev2"])
 
 the_graph.connect(deinterleave.l,mixer.inl)
 the_graph.connect(deinterleave.r,mixer.inr)

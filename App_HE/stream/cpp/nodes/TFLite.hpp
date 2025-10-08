@@ -242,9 +242,8 @@ class TFLite : public StreamNode
             for (size_t outIndex = 0; outIndex < this->GetNumOutputs(); outIndex++)
             {
                 TfLiteTensor *outputTensor = this->m_output.at(outIndex);
-                
+
                 sendTensor(outIndex, outputTensor);
-                
             }
             // Send acknowledge event to the producer
             if (ev)
@@ -264,20 +263,18 @@ class TFLite : public StreamNode
         inputReceived |= (1 << dstPort);
 
         TfLiteTensor *inputTensor = this->m_input.at(dstPort);
-
+        bool lockError;
         // Input tensor
-        input.lock_shared([inputTensor, this](CG_MUTEX_ERROR_TYPE error, const Tensor<T> &tensor)
+        input.lock_shared(lockError, [inputTensor, this](const Tensor<T> &tensor)
                           {
-                        if (!CG_MUTEX_HAS_ERROR(error))
-                        {
+                        
                             if (std::holds_alternative<UniquePtr<T>>(tensor.data))
                             {
                                  const UniquePtr<T> &buf = std::get<UniquePtr<T>>(tensor.data);
                                  size_t bytes = tensor.size()*sizeof(T);
                                  if (bytes == inputTensor->bytes)
                                     memcpy(inputTensor->data.raw, buf.get(), tensor.size()*sizeof(T));
-                            }
-                        } });
+                            } });
 
         tryInference();
     }
@@ -292,12 +289,11 @@ class TFLite : public StreamNode
         inputReceived |= (1 << dstPort);
 
         TfLiteTensor *inputTensor = this->m_input.at(dstPort);
-
+        bool lockError;
         // Input tensor
-        input.lock_shared([inputTensor, this](CG_MUTEX_ERROR_TYPE error, const Tensor<T> &tensor)
+        input.lock_shared(lockError, [inputTensor, this](const Tensor<T> &tensor)
                           {
-                        if (!CG_MUTEX_HAS_ERROR(error))
-                        {
+                        
                             if (std::holds_alternative<UniquePtr<T>>(tensor.data))
                             {
                                 size_t bytes = tensor.size()*sizeof(T);
@@ -335,8 +331,7 @@ class TFLite : public StreamNode
                                     }
                                  }
                                 }
-                            }
-                        } });
+                            } });
         tryInference();
     }
 

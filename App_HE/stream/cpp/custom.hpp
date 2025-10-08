@@ -172,4 +172,9 @@ class CMSISLock
     }                                                                                                            \
 }
 
+
+#define CG_TIME_STAMP_TYPE uint32_t
+
+#define CG_GET_TIME_STAMP() osKernelGetTickCount()  
+
 #endif
