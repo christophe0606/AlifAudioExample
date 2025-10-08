@@ -1,19 +1,10 @@
 {
   "audioSink": 0,
-  "audioSource": 1,
-  "deinterleave": 2,
-  "fftLeft": 3,
-  "fftRight": 4,
-  "interleave": 5,
-  "mixer": 6,
-  "spectrogramLeft": 7,
-  "spectrogramRight": 8,
-  "toComplexLeft": 9,
-  "toComplexRight": 10,
-  "to_f32": 11,
-  "to_q15": 12,
-  "winLeft": 13,
-  "winRight": 14,
-  "display": 15,
-  "videoSource": 16
+  "deinterleave": 1,
+  "interleave": 2,
+  "mic": 3,
+  "srcL": 4,
+  "srcR": 5,
+  "toF32": 6,
+  "toQ15": 7
 }

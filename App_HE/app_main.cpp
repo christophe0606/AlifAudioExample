@@ -24,6 +24,8 @@ extern "C"
 
 #include "appnodes/AppDisplay.hpp"
 #include "nodes/VStreamVideoSource.hpp"
+#include "nodes/VStreamAudioSink.hpp"
+
 
 #include "cg_queue.hpp"
 
@@ -55,6 +57,8 @@ uint8_t CAM_Frame[CAMERA_BUFFER_SIZE] CAMERA_FRAME_BUF_ATTRIBUTE;
 
 /* Display frame buffer */
 uint8_t LCD_Frame[DISPLAY_BUFFER_SIZE] DISPLAY_FRAME_BUF_ATTRIBUTE;
+
+
 
 int init_memory_pools()
 {

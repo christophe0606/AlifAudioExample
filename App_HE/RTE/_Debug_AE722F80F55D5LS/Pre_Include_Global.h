@@ -12,6 +12,10 @@
 /* ARM::Machine Learning:NPU Support:Ethos-U Driver&Generic U55@1.25.2 */
 // enabling global pre includes 
         #define ETHOSU_ARCH u55
+/* tensorflow::Machine Learning:TensorFlow:Kernel&CMSIS-NN@1.25.2 */
+// enabling global pre includes 
+        #define TF_LITE_STATIC_MEMORY 1
+        #define CMSIS_NN
 
 
 #endif /* PRE_INCLUDE_GLOBAL_H */

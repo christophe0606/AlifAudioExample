@@ -17,10 +17,11 @@
 
 #include "custom.hpp"
 
+#include "rtos_events.hpp"
+
 using namespace arm_cmsis_stream;
 
 #define VSTREAM_STEREO_BLOCK_COUNT (2)
-#define VSTREAM_AUDIO_BLOCK_EVT (0x1)
 
 extern vStreamDriver_t Driver_vStreamAudioIn;
 #define vStream_AudioIn (&Driver_vStreamAudioIn)
@@ -34,32 +35,28 @@ void AudioDrv_Event_Callback(uint32_t event)
 {
     (void)event;
 
-    osThreadFlagsSet(tid_stream, VSTREAM_AUDIO_BLOCK_EVT);
+    osThreadFlagsSet(tid_stream, AUDIO_SOURCE_FRAME_EVENT);
 }
 
-template <typename OUT, int outputSize>
-class DebugSource;
-
-template <int outputSamples>
-class DebugSource<sq15, outputSamples>
-    : public GenericSource<sq15, outputSamples>
+template <typename OUT, int outputSamples>
+class DebugSource : public GenericSource<OUT, outputSamples>
 {
   public:
-    DebugSource(FIFOBase<sq15> &dst,
+    DebugSource(FIFOBase<OUT> &dst,
                 int frequency = 440,
                 int samplingFreq = 16000,
-                bool master = false)
-        : GenericSource<sq15, outputSamples>(dst), master_(master)
+                int master = 0)
+        : GenericSource<OUT, outputSamples>(dst), master_(master)
     {
 
-        stereoBuffer = new (std::align_val_t(64)) sq15[VSTREAM_STEREO_BLOCK_COUNT * outputSamples];
+        stereoBuffer = new (std::align_val_t(64)) OUT[VSTREAM_STEREO_BLOCK_COUNT * outputSamples];
         /* Initialize audio in stream and set the receive buffer */
         if (master_)
         {
             vStream_AudioIn->Initialize(AudioDrv_Event_Callback);
             vStream_AudioIn->SetBuf(stereoBuffer,
-                                    VSTREAM_STEREO_BLOCK_COUNT * sizeof(sq15) * outputSamples,
-                                    sizeof(sq15) * outputSamples);
+                                    VSTREAM_STEREO_BLOCK_COUNT * sizeof(OUT) * outputSamples,
+                                    sizeof(OUT) * outputSamples);
 
             /* Start audio receiver */
             vStream_AudioIn->Start(VSTREAM_MODE_CONTINUOUS);
@@ -92,15 +89,14 @@ class DebugSource<sq15, outputSamples>
 
     int run() final
     {
-        sq15 *buf = nullptr;
         if (master_)
         {
-            osThreadFlagsWait(VSTREAM_AUDIO_BLOCK_EVT, osFlagsWaitAny, osWaitForever);
+            osThreadFlagsWait(AUDIO_SOURCE_FRAME_EVENT, osFlagsWaitAny, osWaitForever);
             // Input audio block is read but ignore.
             // The debug source generates a known signal.
-            buf = (sq15 *)vStream_AudioIn->GetBlock();
+            (void)vStream_AudioIn->GetBlock();
         }
-        sq15 *out = this->getWriteBuffer();
+        OUT *out = this->getWriteBuffer();
         if (master_)
         {
             vStream_AudioIn->ReleaseBlock();
@@ -110,7 +106,7 @@ class DebugSource<sq15, outputSamples>
         for (int i = 0; i < outputSamples; i++)
         {
             // out[i].left = (0.3f * (cosf(phaseAmp) + 1.0f) * sinf(phaseFrequency) * 16384+0.5f);
-            signal[i] = 1.0f * sinf(phaseFrequency);
+            floatSignal[i] = 1.0f * sinf(phaseFrequency);
 
             phaseFrequency += deltaPhaseFrequency;
             if (phaseFrequency >= 2 * 3.141592f)
@@ -121,14 +117,46 @@ class DebugSource<sq15, outputSamples>
                 phaseAmp -= 2 * 3.141592f;
         }
 
-        arm_float_to_q15(signal, (q15_t *)out, 2 * outputSamples);
+        if constexpr (std::is_same_v<OUT, q31_t>) {
+            arm_float_to_q31(floatSignal, (q31_t *)out, outputSamples);
+        }
+        else if constexpr (std::is_same_v<OUT, q7_t>) {
+            arm_float_to_q7(floatSignal, (q7_t *)out, outputSamples);
+        }
+        else if constexpr (std::is_same_v<OUT, float16_t>) {
+            arm_float_to_float16(floatSignal, (float16_t *)out, outputSamples);
+        }
+        else if constexpr (std::is_same_v<OUT, sq15>) {
+            arm_float_to_q15(floatSignal, cvtBuffer, outputSamples);
+            for (int i = 0; i < outputSamples; i++) {
+                out[i].left = cvtBuffer[i];
+                out[i].right = cvtBuffer[i];
+            }
+        }
+        else if constexpr (std::is_same_v<OUT, q15_t>) {
+            arm_float_to_q15(floatSignal, (q15_t *)out, outputSamples);
+        }
+        else if constexpr (std::is_same_v<OUT, sf32>) {
+            for (int i = 0; i < outputSamples; i++) 
+            {
+                out[i].left = floatSignal[i];
+                out[i].right = floatSignal[i];
+            }
+        }
+        else if constexpr (std::is_same_v<OUT, float>) {
+           memcpy(out, floatSignal, outputSamples * sizeof(OUT));
+        }
+        else {
+            static_assert(false, "Unsupported type");
+        }
 
         return (CG_SUCCESS);
     };
 
   protected:
-    float32_t signal[outputSamples];
-    sq15 *stereoBuffer;
+    float32_t floatSignal[outputSamples];
+    OUT cvtBuffer[outputSamples];
+    OUT *stereoBuffer;
     float32_t phaseFrequency = 0.0f;
     float32_t deltaPhaseFrequency = 0.0f;
     float32_t phaseAmp = 0.0f;

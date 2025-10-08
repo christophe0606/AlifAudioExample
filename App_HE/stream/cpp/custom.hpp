@@ -150,9 +150,26 @@ class CMSISLock
 // Queue implementation for events
 #include "cg_queue.hpp"
 
-
+#include "rtos_events.hpp"
 
 // Because memory optimization is enabled
 #define CG_BEFORE_BUFFER __ALIGNED(16)
+
+#define CG_BEFORE_SCHEDULE \
+  uint32_t errorFlags = 0;
+
+#define CG_BEFORE_NODE_EXECUTION(ID)                                                                             \
+{                                                                                                                \
+    errorFlags = osThreadFlagsWait(AUDIO_SINK_UNDERFLOW_EVENT | AUDIO_SOURCE_OVERFLOW_EVENT, osFlagsWaitAny, 0); \
+    if (errorFlags & osFlagsErrorResource)                                                                       \
+    {                                                                                                            \
+        errorFlags = 0;                                                                                          \
+    }                                                                                                            \
+    if (errorFlags & AUDIO_SOURCE_OVERFLOW_EVENT)                                                                \
+    {                                                                                                            \
+        cgStaticError = CG_BUFFER_OVERFLOW;                                                                      \
+        goto errorHandling;                                                                                      \
+    }                                                                                                            \
+}
 
 #endif

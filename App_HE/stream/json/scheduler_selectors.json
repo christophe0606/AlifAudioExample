@@ -1,4 +1,5 @@
 {
+  "volume": 100,
   "do": 1,
   "pause": 2,
   "resume": 3,

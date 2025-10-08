@@ -13,11 +13,14 @@ project:
       files:
         - file: stream/cpp/cg_queue.cpp
         - file: stream/scheduler/scheduler.cpp
+        - file: stream/cpp/node_globals.cpp
 
     - group: Display
       files:
         - file: display/lcd.c
        
+  define:
+    - ACTIVATION_BUF_SZ: 131072
 
   add-path:
     - .
@@ -36,6 +39,22 @@ project:
             - -Wno-nan-infinity-disabled
     - component: CMSIS:OS Tick:SysTick
     - component: CMSIS:RTOS2:Keil RTX5&Source
+
+    - component: CMSIS:NN Lib
+    - component: Data Exchange:Serialization:flatbuffers&tensorflow
+    - component: Data Processing:Math:gemmlowp fixed-point&tensorflow
+    - component: Data Processing:Math:kissfft&tensorflow
+    - component: Data Processing:Math:ruy&tensorflow
+
+    # TensorFlow Kernel variant for devices without Ethos-U
+    - component: Machine Learning:TensorFlow:Kernel&CMSIS-NN
+      not-for-context: \.*-U[0-9]{2}.*
+    # TensorFlow Kernel variant for devices with Ethos-U
+    - component: Machine Learning:TensorFlow:Kernel&Ethos-U
+      for-context: \.*-U[0-9]{2}.*
+
+    - component: Machine Learning:TensorFlow:Kernel Utils
+    - component: Machine Learning:TensorFlow:Testing
    
 
   layers:
@@ -63,3 +82,10 @@ project:
     - pack: ARM::CMSIS-Compiler
     - pack: ARM::ethos-u-core-driver
     - pack: AlifSemiconductor::Ensemble
+
+    - pack: ARM::CMSIS-NN@^7.0.0
+    - pack: tensorflow::flatbuffers@^1.25.2
+    - pack: tensorflow::gemmlowp@^1.25.2
+    - pack: tensorflow::kissfft@^1.25.2
+    - pack: tensorflow::ruy@^1.25.2
+    - pack: tensorflow::tensorflow-lite-micro@^1.25.2
