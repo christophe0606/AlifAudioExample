@@ -2,9 +2,9 @@ from cmsis_stream.cg.scheduler import GenericSink
 
 from nodes import *
 
-class KWS(TFLite):
-    def __init__(self,name,addr="nullptr",size=0):
-        TFLite.__init__(self,name,addr=addr,size=size)
+class KWSClassify(GenericSink):
+    def __init__(self,name):
+        GenericSink.__init__(self,name)
         self.addEventInput(1)
 
     @property
@@ -15,4 +15,4 @@ class KWS(TFLite):
     @property
     def typeName(self):
         """The name of the C++ class implementing this node"""
-        return "KWS"
+        return "KWSClassify"

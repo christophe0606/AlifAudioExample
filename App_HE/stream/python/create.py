@@ -1,5 +1,5 @@
 from cmsis_stream.cg.scheduler import Graph,Configuration
-from cmsis_stream.cg.scheduler.graphviz import *
+from cmsis_stream.cg.scheduler.graphviz import Style
 
 from nodes import *
 from appnodes import *
@@ -17,7 +17,7 @@ src = VStreamAudioSource("audioSource",AUDIO_BLOCK)
 # directly may be better to support more
 # constrained environment
 #speaker = VStreamAudioSink("audioSink",3*AUDIO_BLOCK)
-speaker = NullSink("audioSink",3*AUDIO_BLOCK)
+speaker = NullSink("audioSink",Q15_STEREO,3*AUDIO_BLOCK)
 video = VStreamVideoSource("videoSource")
 
 src_left = SRC("srcLeft",AUDIO_BLOCK)

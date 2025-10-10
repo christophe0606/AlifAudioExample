@@ -12,17 +12,13 @@
 using namespace arm_cmsis_stream;
 
 
-template <typename OUT, int outputSize>
-class NullSink;
-
-template <int outputSamples>
-class NullSink<sq15, outputSamples>
-    : public GenericSink<sq15, outputSamples>
+template <typename OUT, int outputSamples>
+class NullSink: public GenericSink<OUT, outputSamples>
 {
   public:
    
-    NullSink(FIFOBase<sq15> &dst)
-        : GenericSink<sq15, outputSamples>(dst)
+    NullSink(FIFOBase<OUT> &dst)
+        : GenericSink<OUT, outputSamples>(dst)
     {
 
        
@@ -45,7 +41,7 @@ class NullSink<sq15, outputSamples>
 
     int run() final
     {
-        sq15 *input = this->getReadBuffer();
+        OUT *input = this->getReadBuffer();
         
         return (CG_SUCCESS);
     };

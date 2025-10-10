@@ -3,10 +3,10 @@ from cmsis_stream.cg.scheduler import GenericSink
 from .NodeTypes import *
 
 class NullSink(GenericSink):
-    def __init__(self,name,outLength):
+    def __init__(self,name,theType,outLength):
         GenericSink.__init__(self,name)
         # Stereo output
-        self.addInput("i",Q15_STEREO,outLength)
+        self.addInput("i",theType,outLength)
 
     @property
     def typeName(self):

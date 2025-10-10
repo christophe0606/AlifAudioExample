@@ -15,7 +15,7 @@ extern "C"
 {
 #include "cmsis_os2.h"
 #include "cmsis_vstream.h"
-#include "debug.h"
+#include "camera.h"
 #include "config.h"
 }
 

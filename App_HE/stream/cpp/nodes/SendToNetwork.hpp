@@ -11,7 +11,7 @@ extern "C"
 #include "cg_enums.h"
 #include "custom.hpp"
 #include <cstring>
-
+#include <atomic>
 
 using namespace arm_cmsis_stream;
 
@@ -36,8 +36,9 @@ class SendToNetwork : public GenericSink<IN, inputSamples>
     int run() override final
     {
         IN *in = this->getReadBuffer();
-        if (ready)
+        if (ready.load())
         {
+            DEBUG_PRINT("SendToNetwork: send buffer\n");
 
             UniquePtr<IN> tensorData(inputSamples);
             memcpy(tensorData.get(), in, inputSamples * sizeof(IN));
@@ -49,11 +50,11 @@ class SendToNetwork : public GenericSink<IN, inputSamples>
 
             if (!status)
             {
-                ERROR_PRINT("Failed to send event to network\n");
+                ERROR_PRINT("SendToNetwork: Failed to send event to network\n");
             }
             else 
             {
-                ready = false;
+                ready.store(false);
             }
         }
 
@@ -62,11 +63,12 @@ class SendToNetwork : public GenericSink<IN, inputSamples>
 
     void processEvent(int dstPort, Event &&evt) final override
     {
+        DEBUG_PRINT("SendToNetwork: Event %d received on port %d\n", evt.event_id, dstPort);
         if (dstPort == 0)
         {
             if (evt.event_id == kDo)
             {
-                ready = true;
+                ready.store(true);
             }
         }
     }
@@ -77,6 +79,6 @@ class SendToNetwork : public GenericSink<IN, inputSamples>
     }
 
   protected:
-    bool ready{true};
+    std::atomic<bool> ready{false};
     EventOutput ev0;
 };

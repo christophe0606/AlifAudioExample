@@ -1,10 +1,15 @@
 #include "nodes/TFLite.hpp"
 
+extern "C"
+{
+#include "network.h"
+}
+
 class KWS : public TFLite
 {
   public:
     KWS(const uint8_t *nnModelAddr, uint32_t nnModelSize)
-        : TFLite(nnModelAddr, nnModelSize) {
+        : TFLite(nnModelAddr, nnModelSize,1),mNbOutputs(1) {
           };
 
     virtual ~KWS()
@@ -46,11 +51,13 @@ class KWS : public TFLite
 
     size_t GetNumOutputs() const final override
     {
-        return 1;
+        return mNbOutputs;
     }
 
     /* Maximum number of individual operations that can be enlisted. */
     static constexpr int ms_maxOpCnt = 7;
     /* A mutable op resolver instance. */
     tflite::MicroMutableOpResolver<ms_maxOpCnt> m_opResolver;
+protected:
+   const uint32_t mNbOutputs;
 };

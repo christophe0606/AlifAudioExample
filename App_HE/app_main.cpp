@@ -228,9 +228,9 @@ int app_main(void)
     DEBUG_PRINT("Create nodes\n");
     // Init nodes and starts audio stream
     err = init_scheduler();
-    if (err == CG_MEMORY_ALLOCATION_FAILURE)
+    if (err != CG_SUCCESS)
     {
-        ERROR_PRINT("Error: Memory allocation failure during scheduler initialization.\n");
+        ERROR_PRINT("Error: Failure during scheduler initialization.\n");
         goto err_main;
     }
 

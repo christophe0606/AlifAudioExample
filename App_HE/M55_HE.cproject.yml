@@ -6,7 +6,8 @@ project:
     - group: AudioApplication
       files:
         - file: ./app_main.cpp
-        - file: ./debug.c
+        - file: ./camera.c
+        - file: ./stream/cpp/kws_mfcc.c
 
   
     - group: Stream
@@ -14,10 +15,31 @@ project:
         - file: stream/cpp/cg_queue.cpp
         - file: stream/scheduler/scheduler.cpp
         - file: stream/cpp/node_globals.cpp
+        
 
     - group: Display
       files:
         - file: display/lcd.c
+
+    - group: Keyword Spotting ML models
+      files:
+        - file: networks/network.cpp
+        # Model for devices with Ethos-U55 (128 macs)
+        - file: networks/kws_micronet_m_vela_H128.tflite.cpp
+          for-context: \.*-U55-128.*
+        # Model for devices with Ethos-U55 (256 macs)
+        - file: networks/kws_micronet_m_vela_H256.tflite.cpp
+          for-context: \.*-U55(-256)?(?!-\d{2,3}).*
+        # Model for devices with Ethos-U65 (256 macs)
+        - file: networks/kws_micronet_m_vela_Y256.tflite.cpp
+          for-context: \.*-U65(-256)?(?!-\d{2,3}).*
+        # Model for devices with Ethos-U85 (256 macs)
+        - file: networks/kws_micronet_m_vela_Z256.tflite.cpp
+          for-context: \.*-U85(-256)?(?!-\d{2,3}).*
+        # Model for devices without Ethos-U
+        - file: networks/kws_micronet_m.tflite.cpp
+          not-for-context: \.*-U[0-9]{2}.*
+        
        
   define:
     - ACTIVATION_BUF_SZ: 131072
@@ -28,6 +50,7 @@ project:
     - stream
     - stream/scheduler
     - display
+    - networks
 
   # List components to use for your application.
   # A software component is a re-usable unit that may be configurable.

@@ -23,16 +23,22 @@ using namespace arm_cmsis_stream;
 class TFLite : public StreamNode
 {
   public:
-    TFLite(const uint8_t *nnModelAddr, uint32_t nnModelSize)
+    TFLite(const uint8_t *nnModelAddr, uint32_t nnModelSize,uint32_t nbOutputs=1)
         : StreamNode(), tensorArenaAddr_(tensorArena),
-          tensorArenaSize_(sizeof(tensorArena))
+          tensorArenaSize_(sizeof(tensorArena)),initErrorOccured(false)
     {
 
+        if (nnModelAddr == nullptr || nnModelSize == 0)
+        {
+            ERROR_PRINT("TFLite: Invalid model address or size\n");
+            initErrorOccured = true;
+            return;
+        }
         this->m_pModel = ::tflite::GetModel(nnModelAddr);
 
         if (this->m_pModel->version() != TFLITE_SCHEMA_VERSION)
         {
-            ERROR_PRINT("Model's schema version %" PRIu32 " is not equal "
+            ERROR_PRINT("TFLite: Model's schema version %" PRIu32 " is not equal "
                         "to supported version %d.",
                         this->m_pModel->version(),
                         TFLITE_SCHEMA_VERSION);
@@ -43,6 +49,11 @@ class TFLite : public StreamNode
         this->m_modelAddr = nnModelAddr;
         this->m_modelSize = nnModelSize;
         this->m_pAllocator = nullptr;
+
+        // First output is for the acknowledge event
+        ev = new EventOutput[1 + nbOutputs];
+        
+        
     }
 
     virtual ~TFLite()
@@ -56,6 +67,16 @@ class TFLite : public StreamNode
     cg_status init() final override
     {
 
+        if (initErrorOccured)
+        {
+            return CG_INIT_FAILURE;
+        }
+        if (this->m_modelAddr == nullptr || this->m_modelSize == 0)
+        {
+            ERROR_PRINT("TFLite: Invalid model address or size\n");
+            return CG_INIT_FAILURE;
+        }
+        
         bool ok = this->enlistOperations();
         if (!ok || initErrorOccured)
         {
@@ -71,10 +92,10 @@ class TFLite : public StreamNode
 
             if (!this->m_pAllocator)
             {
-                ERROR_PRINT("Failed to create allocator\n");
+                ERROR_PRINT("TFLite: Failed to create allocator\n");
                 return CG_INIT_FAILURE;
             }
-            DEBUG_PRINT("Created new allocator @ 0x%p\n", this->m_pAllocator);
+            DEBUG_PRINT("TFLite: Created new allocator @ 0x%p\n", this->m_pAllocator);
         }
         else
         {
@@ -86,12 +107,12 @@ class TFLite : public StreamNode
 
         if (!this->m_pInterpreter)
         {
-            ERROR_PRINT("Failed to allocate interpreter\n");
+            ERROR_PRINT("TFLite: Failed to allocate interpreter\n");
             return CG_INIT_FAILURE;
         }
 
         /* Allocate memory from the tensor_arena for the model's tensors. */
-        DEBUG_PRINT("Allocating tensors\n");
+        DEBUG_PRINT("TFLite: Allocating tensors\n");
         TfLiteStatus allocate_status = this->m_pInterpreter->AllocateTensors();
 
         if (allocate_status != kTfLiteOk)
@@ -110,7 +131,7 @@ class TFLite : public StreamNode
 
         if (this->m_input.empty() || this->m_output.empty())
         {
-            ERROR_PRINT("failed to get tensors\n");
+            ERROR_PRINT("TFLite: Failed to get tensors\n");
             return CG_INIT_FAILURE;
         }
         else
@@ -130,11 +151,18 @@ class TFLite : public StreamNode
             // this->LogInterpreterInfo();
         }
 
-        // First output is for the acknowledge event
-        ev = new EventOutput[1 + this->GetNumOutputs()];
+        
+        if (ev)
+        {
+            ev[0].sendSync(kNormalPriority, kDo);
+        }
+        else {
+            ERROR_PRINT("TFLite: Failed to create event outputs\n");
+        }
 
         this->m_inited = true;
 
+        
         return (CG_SUCCESS);
     }
 
@@ -208,7 +236,7 @@ class TFLite : public StreamNode
         }
         default:
         {
-            ERROR_PRINT("Unsupported data type %d\n", t->type);
+            ERROR_PRINT("TFLite: Unsupported data type %d\n", t->type);
             return;
         }
         }
@@ -231,11 +259,12 @@ class TFLite : public StreamNode
         // If all inputs have been received
         if (inputReceived == ((1 << nb) - 1))
         {
+            DEBUG_PRINT("Inference\n");
             inputReceived = 0;
             TfLiteStatus invoke_status = this->m_pInterpreter->Invoke();
             if (invoke_status != kTfLiteOk)
             {
-                ERROR_PRINT("Invoke failed on model\n");
+                ERROR_PRINT("TFLite: Invoke failed on model\n");
                 return;
             }
             // Output tensors are ready
@@ -254,131 +283,142 @@ class TFLite : public StreamNode
     }
 
     template <typename T>
-    void convertInputToF32(int dstPort, TensorPtr<T> &&input)
+    void convertReceivedF32Tensor(int dstPort, TensorPtr<T> &&input)
     {
 
         if (dstPort >= this->GetNumInputs())
             return;
 
-        inputReceived |= (1 << dstPort);
-
         TfLiteTensor *inputTensor = this->m_input.at(dstPort);
+
         bool lockError;
         // Input tensor
-        input.lock_shared(lockError, [inputTensor, this](const Tensor<T> &tensor)
+        input.lock_shared(lockError, [inputTensor, dstPort, this](const Tensor<T> &tensor)
                           {
-                        
-                            if (std::holds_alternative<UniquePtr<T>>(tensor.data))
-                            {
-                                 const UniquePtr<T> &buf = std::get<UniquePtr<T>>(tensor.data);
-                                 size_t bytes = tensor.size()*sizeof(T);
-                                 if (bytes == inputTensor->bytes)
-                                    memcpy(inputTensor->data.raw, buf.get(), tensor.size()*sizeof(T));
-                            } });
+                              using pointee_t = std::remove_const_t<T>;
+                              const pointee_t *buf = tensor.buffer();
+                              size_t bytes = tensor.size() * sizeof(T);
+                              switch (inputTensor->type)
+                              {
+                              case kTfLiteFloat32:
+                                  if (bytes == inputTensor->bytes)
+                                  {
+                                      memcpy(inputTensor->data.raw, buf, tensor.size() * sizeof(T));
+                                      inputReceived |= (1 << dstPort);
+                                  }
+                                  break;
+                              case kTfLiteInt8:
+                              {
+                                  TfLiteQuantization quant = inputTensor->quantization;
+                                  if (kTfLiteAffineQuantization == quant.type)
+                                  {
+                                      auto *quantParams = (TfLiteAffineQuantization *)quant.params;
+                                      const float quantScale = quantParams->scale->data[0];
+                                      const int quantOffset = quantParams->zero_point->data[0];
+                                      for (size_t i = 0; i < tensor.size(); i++)
+                                      {
+                                          float val = (float)buf[i];
+                                          int8_t quantVal = (int8_t)(val / quantScale) + quantOffset;
+                                          if (quantVal > 127)
+                                              quantVal = 127;
+                                          else if (quantVal < -128)
+                                              quantVal = -128;
+                                          ((int8_t *)inputTensor->data.data)[i] = quantVal;
+                                      }
+                                  }
+                                  else
+                                  {
+                                      for (size_t i = 0; i < tensor.size(); i++)
+                                      {
+                                          float val = (float)buf[i];
+                                          if (val > 127)
+                                              val = 127;
+                                          else if (val < -128)
+                                              val = -128;
+                                          ((int8_t *)inputTensor->data.data)[i] = (int8_t)val;
+                                      }
+                                  }
+                                  inputReceived |= (1 << dstPort);
+                                }
+                                  break;
+                              default:
+                                  ERROR_PRINT("TFLite: Unsupported tensor input data type %d\n", inputTensor->type);
+                                  return;
+                              } });
 
         tryInference();
     }
 
     template <typename T>
-    void convertInputToInt8(int dstPort, TensorPtr<T> &&input)
+    void convertReceivedInt8Tensor(int dstPort, TensorPtr<T> &&input)
     {
 
         if (dstPort >= this->GetNumInputs())
             return;
 
-        inputReceived |= (1 << dstPort);
+        
 
         TfLiteTensor *inputTensor = this->m_input.at(dstPort);
         bool lockError;
         // Input tensor
-        input.lock_shared(lockError, [inputTensor, this](const Tensor<T> &tensor)
+        input.lock_shared(lockError, [inputTensor, dstPort,this](const Tensor<T> &tensor)
                           {
-                        
-                            if (std::holds_alternative<UniquePtr<T>>(tensor.data))
-                            {
-                                size_t bytes = tensor.size()*sizeof(T);
-                                if (bytes == inputTensor->bytes)
-                                {
-                                 const UniquePtr<T> &buf = std::get<UniquePtr<T>>(tensor.data);
-                                 TfLiteQuantization quant = inputTensor->quantization;
-                                 if (kTfLiteAffineQuantization == quant.type)
-                                 {
-                                      auto* quantParams = (TfLiteAffineQuantization*) quant.params;
-                                      const float quantScale = quantParams->scale->data[0];
-                                      const int quantOffset = quantParams->zero_point->data[0];
-                                      for (size_t i = 0; i < tensor.size(); i++)
-                                      {
-                                            float val = (float)buf.get()[i];
-                                            int8_t quantVal = (int8_t)(val / quantScale) + quantOffset;
-                                            if (quantVal > 127)
-                                                quantVal = 127;
-                                            else if (quantVal < -128)
-                                                quantVal = -128;
-                                            ((int8_t*)inputTensor->data.data)[i] = quantVal;
-                                      }
-
-                                 }
-                                 else 
-                                 {
-                                    for (size_t i = 0; i < tensor.size(); i++)
-                                    {
-                                            float val = (float)buf.get()[i];
-                                            if (val > 127)
-                                                val = 127;
-                                            else if (val < -128)
-                                                val = -128;
-                                            ((int8_t*)inputTensor->data.data)[i] = (int8_t)val;
-                                    }
-                                 }
-                                }
-                            } });
+                              using pointee_t = std::remove_const_t<T>;
+                              const pointee_t *buf = tensor.buffer();
+                              size_t bytes = tensor.size() * sizeof(T);
+                              switch (inputTensor->type)
+                              {
+                              case kTfLiteInt8:
+                                  if (bytes == inputTensor->bytes)
+                                  {
+                                      memcpy(inputTensor->data.raw, buf, tensor.size() * sizeof(T));
+                                      inputReceived |= (1 << dstPort);
+                                  }
+                                  break;
+                              break;
+                              default:
+                                  ERROR_PRINT("TFLite: Unsupported tensor input data type %d\n", inputTensor->type);
+                                  return;
+                              }
+                            
+                         });
         tryInference();
     }
 
     void processEvent(int dstPort, Event &&evt) final override
     {
+        DEBUG_PRINT("TFLite: Event %d received on port %d\n", evt.event_id, dstPort);
 
         if (evt.event_id == kValue)
         {
-            switch (m_type)
+            if (evt.wellFormed<TensorPtr<float>>())
             {
-            case kTfLiteFloat32:
+                    convertReceivedF32Tensor(dstPort, std::move(evt.get<TensorPtr<float>>()));
+            }
+            if (evt.wellFormed<TensorPtr<const float>>())
             {
-                if (evt.wellFormed<TensorPtr<float>>())
-                {
-                    convertInputToF32(dstPort, std::move(evt.get<TensorPtr<float>>()));
-                }
-                if (evt.wellFormed<TensorPtr<const float>>())
-                {
-                    convertInputToF32(dstPort, std::move(evt.get<TensorPtr<const float>>()));
-                }
-                break;
+                    convertReceivedF32Tensor(dstPort, std::move(evt.get<TensorPtr<const float>>()));
             }
-
-            case kTfLiteInt8:
+            if (evt.wellFormed<TensorPtr<float>>())
             {
-                if (evt.wellFormed<TensorPtr<float>>())
-                {
-                    convertInputToInt8(dstPort, std::move(evt.get<TensorPtr<float>>()));
-                }
-                if (evt.wellFormed<TensorPtr<const float>>())
-                {
-                    convertInputToInt8(dstPort, std::move(evt.get<TensorPtr<const float>>()));
-                }
-                break;
+                    convertReceivedInt8Tensor(dstPort, std::move(evt.get<TensorPtr<float>>()));
             }
-            default:
-                ERROR_PRINT("Unsupported data type %d\n", m_type);
-                return;
+            if (evt.wellFormed<TensorPtr<const float>>())
+            {
+                    convertReceivedInt8Tensor(dstPort, std::move(evt.get<TensorPtr<const float>>()));
             }
+            
+           
         }
     }
 
     void subscribe(int outputPort, StreamNode &dst, int dstPort) final override
     {
-        if (outputPort >= this->GetNumOutputs())
+        if (outputPort >= (1+this->GetNumOutputs()))
             return;
         if (outputPort < 0)
+            return;
+        if (ev == nullptr)
             return;
         ev[outputPort].subscribe(dst, dstPort);
     }

@@ -45,3 +45,36 @@ class DeinterleaveStereo<sf32, inputSamples, float32_t, inputSamples, float32_t,
         return (CG_SUCCESS);
     };
 };
+
+template <int inputSamples>
+class DeinterleaveStereo<sq15, inputSamples, q15_t, inputSamples, q15_t, inputSamples> : public GenericNode12<sq15, inputSamples, q15_t, inputSamples, q15_t, inputSamples>
+{
+
+  public:
+    DeinterleaveStereo(FIFOBase<sq15> &src, FIFOBase<q15_t> &left, FIFOBase<q15_t> &right)
+        : GenericNode12<sq15, inputSamples, q15_t, inputSamples, q15_t, inputSamples>(src, left, right) {};
+
+    int prepareForRunning() final
+    {
+        if ((this->willOverflow1()) || (this->willOverflow2()) || (this->willUnderflow()))
+        {
+            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
+        }
+
+        return (0);
+    };
+
+    int run() final
+    {
+        q15_t *l = this->getWriteBuffer1();
+        q15_t *r = this->getWriteBuffer2();
+        sq15 *in = this->getReadBuffer();
+        for (int i = 0; i < inputSamples; i++)
+        {
+            l[i] = in[i].left;
+            r[i] = in[i].right;
+        }
+
+        return (CG_SUCCESS);
+    };
+};

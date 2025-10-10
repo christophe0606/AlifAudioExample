@@ -24,7 +24,7 @@
 #include CMSIS_device_header
 
 #include "cmsis_vstream.h"
-#include "debug.h"
+#include "camera.h"
 #include "Driver_CPI.h"
 
 /* Handle Flags Definitions */

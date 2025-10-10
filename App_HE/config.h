@@ -28,12 +28,7 @@
 #define ERROR_PRINT(fmt, ...)
 #endif 
 
-#if 0
-#define CG_BEFORE_NODE_EXECUTION(ID)                            \
-    {                                                           \
-        DEBUG_PRINT("Executing node ID=%lu\n", (unsigned long)(ID)); \
-    }
-#endif 
+
 
 #define VIDEO_SRC_EVT (0x1)
 #define VIDEO_SINK_EVT (0x2)
