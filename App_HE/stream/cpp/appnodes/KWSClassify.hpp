@@ -103,7 +103,7 @@ class KWSClassify : public StreamNode
             printf("KWS Classify: %s\n", a);
           }
           lastRec = c;
-          ev0.sendAsyncWithTTL(kNormalPriority, kValue, 40, (uint32_t)c); // Send the event to the subscribed nodes
+          ev0.sendSync(kNormalPriority, kValue, (uint32_t)c); // Send the event to the subscribed nodes
         }
     }
 

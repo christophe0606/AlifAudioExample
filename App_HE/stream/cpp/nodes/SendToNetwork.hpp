@@ -46,7 +46,7 @@ class SendToNetwork : public GenericSink<IN, inputSamples>
             TensorPtr<IN> t = TensorPtr<IN>::create_with((uint8_t)1,
                                                          cg_tensor_dims_t{inputSamples},
                                                          std::move(tensorData));
-            bool status = ev0.sendAsync(kNormalPriority, kValue, std::move(t)); // Send the event to the subscribed nodes
+            bool status = ev0.sendAsync(kHighPriority, kValue, std::move(t)); // Send the event to the subscribed nodes
 
             if (!status)
             {

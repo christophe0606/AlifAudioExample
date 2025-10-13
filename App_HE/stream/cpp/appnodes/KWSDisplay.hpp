@@ -132,7 +132,8 @@ class KWSDisplay : public VStreamVideoSink
             displayLast = true;
             bool canRender = this->renderNewFrame();
             // Ask for new frame
-            EventQueue::cg_eventQueue->push(LocalDestination{this, 0}, Event(kDo, kNormalPriority));
+            Event evt(kDo, kNormalPriority);
+            EventQueue::cg_eventQueue->push(LocalDestination{this, 0}, std::move(evt));
         }
         else
         {
@@ -158,7 +159,9 @@ class KWSDisplay : public VStreamVideoSink
             }
             // generate a new frame
             bool canRender = this->renderNewFrame();
-            EventQueue::cg_eventQueue->push(LocalDestination{this, 0}, Event(kDo, kNormalPriority));
+            Event evt(kDo, kNormalPriority);
+            evt.setTTL(40);
+            EventQueue::cg_eventQueue->push(LocalDestination{this, 0}, std::move(evt));
         }
     }
 

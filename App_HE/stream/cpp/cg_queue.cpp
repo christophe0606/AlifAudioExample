@@ -73,6 +73,7 @@ bool MyQueue::push(arm_cmsis_stream::Message &&event)
         {
             // DEBUG_PRINT("Push event %d\n", event.event.event_id);
             uint32_t timestamp = osKernelGetTickCount();
+            event.timestamp = timestamp;
             queue[p][write[p]++] = std::move(event);
             if (write[p] == MY_QUEUE_MAX_ELEMS)
             {
@@ -186,9 +187,9 @@ void MyQueue::execute()
                 bool eventExpired = false;
                 if (msg.event.ttl != 0)
                 {
-                    uint32_t startMs = (msg.timestamp / osKernelGetTickFreq()) / 1000;
+                    uint32_t startMs = (1000*msg.timestamp) / osKernelGetTickFreq() ;
                     uint32_t limitMs = startMs + msg.event.ttl;
-                    uint32_t nowMs = (osKernelGetTickCount() / osKernelGetTickFreq()) / 1000;
+                    uint32_t nowMs = (1000*osKernelGetTickCount()) / osKernelGetTickFreq();
                     if (nowMs > limitMs)
                     {
                         // Event expired
