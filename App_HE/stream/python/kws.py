@@ -58,7 +58,7 @@ the_graph.connect(send["oev0"],kws["iev0"])
 the_graph.connect(kws["oev0"],send["iev0"])
 the_graph.connect(kws["oev1"],classify["iev0"])
 
-#the_graph.connect(classify["oev0"],display["iev0"])
+the_graph.connect(classify["oev0"],display["iev0"])
 #
 conf = Configuration()
 conf.CMSISDSP = False

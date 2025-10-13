@@ -2,7 +2,7 @@
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont,ImageChops
 
-def generate_image(word, width=300, height=300, font_size=12):
+def generate_image(word, width=300, height=300, font_size=12,disp=False):
     # Create a blank image with white background
     img = Image.new('L', (width, height), color = 0)
     bg = Image.new("L", (width, height), 0)
@@ -24,7 +24,6 @@ def generate_image(word, width=300, height=300, font_size=12):
     position = ((width - text_width) // 2, (height - text_height) // 2)
     
     # Add text to image
-    d.fill
     d.text(position, word, fill=255, font=font)
 
     diff = ImageChops.difference(img, bg)
@@ -33,7 +32,7 @@ def generate_image(word, width=300, height=300, font_size=12):
     if bbox:
         img = img.crop(bbox)
    
-    if word == "RIGHT":
+    if word == "RIGHT" and disp:
        img.show()
     
     # Convert image to numpy array and then to uint16 format
@@ -82,12 +81,14 @@ with open(c_out_file, 'w', encoding='utf-8') as cf:
         hf.write(''.join(h_content))
         all_widths = []
         all_heights = []
+
+        def sanitize_name(s):
+                return ''.join(c if (c.isalnum() or c == '_') else '_' for c in s)
         
         for word in words:
-            img_array = generate_image(word)
+            img_array = generate_image(word,disp=False,font_size=70)
         
-            def sanitize_name(s):
-                return ''.join(c if (c.isalnum() or c == '_') else '_' for c in s)
+           
         
             def to_c_array_str(arr, var_name,var_width,var_height):
                 # arr is a 2D numpy array of uint16
@@ -101,7 +102,7 @@ with open(c_out_file, 'w', encoding='utf-8') as cf:
                     chunk = flat[i:i+per_line]
                     lines.append(', '.join(str(int(x)) for x in chunk))
                 body = ',\n    '.join(lines)
-                return f"__ALIGNED(16) const uint8_t {var_name}[{var_width} * {var_height}] = {{\n    {body}\n}};\n"
+                return f"__ALIGNED(16) static const uint8_t {var_name}[{var_width} * {var_height}] = {{\n    {body}\n}};\n"
         
             def to_h_array_str(var_name,var_width,var_height):
                 return f"extern const uint8_t {var_name}[{var_width} * {var_height}];\n"
@@ -111,7 +112,7 @@ with open(c_out_file, 'w', encoding='utf-8') as cf:
             var_base = sanitize_name(word.lower())
             var_width = f"{var_base.upper()}_WIDTH"
             var_height = f"{var_base.upper()}_HEIGHT"
-            var_name = f"{var_base}_img"
+            var_name = f"kws_{var_base}_img"
             width = img_array.shape[1]
             height = img_array.shape[0]
             all_widths.append(width)
@@ -129,7 +130,7 @@ with open(c_out_file, 'w', encoding='utf-8') as cf:
             h_content.append(f"// Image for word: {word}")
             h_content.append(f"#define {var_width} {width}")
             h_content.append(f"#define {var_height} {height}\n")
-            h_content.append(to_h_array_str(var_name,var_width,var_height))
+            #h_content.append(to_h_array_str(var_name,var_width,var_height))
             h_content.append(f"// End of {word}\n\n")
         
             
@@ -142,11 +143,16 @@ with open(c_out_file, 'w', encoding='utf-8') as cf:
         c_content.append(f'const uint32_t kws_heights[{len(words)}]={{')
         c_content.append(', '.join(str(h) for h in all_heights))
         c_content.append('};\n')
+        c_content.append(f'const uint8_t* kws_imgs[{len(words)}]={{')
+        c_content.append(', '.join(f'kws_{sanitize_name(word.lower())}_img' for word in words))
+        #c_content.append(', '.join(f'NULL' for word in words))
+        c_content.append('};\n')
         cf.write(''.join(c_content))
 
         h_content = []
         h_content.append(f'extern const uint32_t kws_widths[{len(words)}];\n')
-        h_content.append(f'extern const uint32_t kws_heights[{len(words)}];\n\n')
+        h_content.append(f'extern const uint32_t kws_heights[{len(words)}];\n')
+        h_content.append(f'extern const uint8_t* kws_imgs[{len(words)}];\n\n')
         hf.write(''.join(h_content))
 
         h_content = []

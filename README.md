@@ -68,6 +68,10 @@ The `KWSClassifier` node must be tune an improved.
 
 `KWS` nodes inherit from `TFLite` node. It should be possible to support different networks easily. The `TFLite` node is generic (but more data conversion formats must be supported at input and output. And currently output of the node is float and should be configurable)
 
+The output of the graph is a node `KWSDisplay` that displays the recognized keyword on the LCD:
+
+![KWS LCD](doc/kws_lcd.jpg)
+
 
 # CMSIS-Stream node details
 Different CMSIS-Stream nodes are used in the demos:

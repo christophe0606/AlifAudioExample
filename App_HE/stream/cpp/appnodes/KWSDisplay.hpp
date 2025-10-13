@@ -35,17 +35,7 @@ using namespace arm_cmsis_stream;
 
 class KWSDisplay : public VStreamVideoSink
 {
-    static constexpr uint8_t *const imgs[10] = { (uint8_t *const)down_img,
-                                                 (uint8_t *const)go_img,
-                                                 (uint8_t *const)left_img,
-                                                 (uint8_t *const)no_img,
-                                                 (uint8_t *const)off_img,
-                                                 (uint8_t *const)on_img,
-                                                 (uint8_t *const)right_img,
-                                                 (uint8_t *const)stop_img,
-                                                 (uint8_t *const)up_img,
-                                                 (uint8_t *const)yes_img};
-
+    
     static constexpr uint32_t duration = 2;
 
   public:
@@ -74,7 +64,7 @@ class KWSDisplay : public VStreamVideoSink
             return;
         const uint32_t wpad = (DISPLAY_FRAME_WIDTH - w) / 2;
         const uint32_t hpad = (DISPLAY_FRAME_HEIGHT - h) / 2;
-        const uint8_t a = alpha >> 8;
+        const uint8_t a = alpha >> 7;
         for (int i = 0; i < h; i++)
         {
             int j = 0;
@@ -110,7 +100,7 @@ class KWSDisplay : public VStreamVideoSink
             for (; j < w; j++)
             {
                 uint8_t o = *pSrc++;
-                uint16_t v = (uint16_t)__SSAT(((uint32_t)o * (uint32_t)alpha) >> 15, 8);
+                uint16_t v = (uint16_t)__USAT(((uint32_t)o * (uint32_t)a) >> 8, 8);
                 q15_t pixel = ((v >> 3) << 11) | ((v >> 2) << 5) | (v >> 3);
                 *pDst++ = pixel;
             }
@@ -134,11 +124,12 @@ class KWSDisplay : public VStreamVideoSink
     {
         if (i >= 0 && i < 10)
         {
-            currentImg = imgs[i];
+            currentImg = kws_imgs[i];
             width = kws_widths[i];
             height = kws_heights[i];
             startMs = getTime();
             alpha = 0x7FFF;
+            displayLast = true;
             bool canRender = this->renderNewFrame();
             // Ask for new frame
             EventQueue::cg_eventQueue->push(LocalDestination{this, 0}, Event(kDo, kNormalPriority));
@@ -154,9 +145,17 @@ class KWSDisplay : public VStreamVideoSink
         uint32_t currentMs = getTime();
         uint32_t delta = (0x7FFF * (currentMs - startMs)/1000/duration);
         alpha = 0;
-        if (delta <= 0x7FFF)
+        if ((delta <= 0x7FFF) || displayLast)
         {
-            alpha = 0x7FFF - delta;
+            if (delta > 0x7FFF)
+            {
+                displayLast = false;
+                alpha = 0;
+            }
+            else 
+            {
+                alpha = 0x7FFF - delta;
+            }
             // generate a new frame
             bool canRender = this->renderNewFrame();
             EventQueue::cg_eventQueue->push(LocalDestination{this, 0}, Event(kDo, kNormalPriority));
@@ -165,7 +164,7 @@ class KWSDisplay : public VStreamVideoSink
 
     void processEvent(int dstPort, Event &&evt) final override
     {
-        printf("KWS Display: event %d\n", evt.event_id);
+        //printf("KWS Display: event %d\n", evt.event_id);
         if (evt.event_id == kDo)
         {
             genNewFrame();
@@ -186,4 +185,5 @@ class KWSDisplay : public VStreamVideoSink
     q15_t alpha{0};
     const uint8_t *currentImg{nullptr};
     uint32_t width,height;
+    bool displayLast{false};
 };

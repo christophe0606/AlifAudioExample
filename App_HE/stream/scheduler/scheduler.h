@@ -17,7 +17,7 @@ extern "C"
 
 
 /* Node identifiers */
-#define NB_IDENTIFIED_NODES 10
+#define NB_IDENTIFIED_NODES 11
 #define AUDIOSOURCE_ID 0
 #define AUDIOWIN_ID 1
 #define DEINTERLEAVE_ID 2
@@ -27,7 +27,8 @@ extern "C"
 #define SEND_ID 6
 #define TO_F32_ID 7
 #define CLASSIFY_ID 8
-#define KWS_ID 9
+#define DISPLAY_ID 9
+#define KWS_ID 10
 
 
 extern CStreamNode* get_scheduler_node(int32_t nodeID);
