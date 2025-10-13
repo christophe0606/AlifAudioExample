@@ -160,7 +160,6 @@ class CMSISLock
 
 #define CG_BEFORE_NODE_EXECUTION(ID)                                                                             \
 {                                                                                                                \
-    DEBUG_PRINT("Executing node ID=%lu\n", (unsigned long)(ID));                                                 \
     errorFlags = osThreadFlagsWait(AUDIO_SINK_UNDERFLOW_EVENT | AUDIO_SOURCE_OVERFLOW_EVENT, osFlagsWaitAny, 0); \
     if (errorFlags & osFlagsErrorResource)                                                                       \
     {                                                                                                            \

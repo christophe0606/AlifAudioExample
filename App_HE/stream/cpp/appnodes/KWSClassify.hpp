@@ -1,4 +1,5 @@
 #pragma once
+#include "EventQueue.hpp"
 #include "StreamNode.hpp"
 #include "dsp/basic_math_functions.h"
 
@@ -94,12 +95,15 @@ class KWSClassify : public StreamNode
 
     void sendLabel(int c)
     {
-        if ((c >=0) && (c < nbLabels-2) && (c != lastRec))
+        if ((c >=0) && (c < nbLabels-2))
         {
           const char *a = labelsVec[c];
-          printf("KWS Classify: %s\n", a);
+          if (c != lastRec)
+          {
+            printf("KWS Classify: %s\n", a);
+          }
           lastRec = c;
-          //ev[0].sendSync(kNormalPriority, kDo, a); // Send the event to the subscribed nodes
+          //ev0.sendAsyncWithTTL(kNormalPriority, kValue, 40, (uint32_t)c); // Send the event to the subscribed nodes
         }
     }
 
@@ -165,8 +169,14 @@ class KWSClassify : public StreamNode
         }
     }
 
+    void subscribe(int outputPort, StreamNode &dst, int dstPort) final override
+    {
+        ev0.subscribe(dst, dstPort);
+    }
+
   protected:
     int lastRec{-1};
     float buf[nbLabels];
     std::vector<std::vector<float>> history;
+    EventOutput ev0;
 };

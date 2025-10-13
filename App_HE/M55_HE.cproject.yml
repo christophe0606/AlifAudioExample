@@ -8,6 +8,7 @@ project:
         - file: ./app_main.cpp
         - file: ./camera.c
         - file: ./stream/cpp/kws_mfcc.c
+        - file: ./stream/kws_img.c
 
   
     - group: Stream
