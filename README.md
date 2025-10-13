@@ -59,12 +59,12 @@ The MFCC is float because quantization is done on TFLite side using the quantiza
 
 So we cannot send `q7` and do the computations in `q7` since the format is not `q7`. We only know it is coded on `int8` but only the `TFLite` node has access to the tensor to know which conversion must be done.
 
-The recognized keywords are currently displayed on the UART. A next update will display them on the LCD.
+The recognized keywords are displayed on the LCD.
 
-This should be tested in a quiet environment.
+This should be tested in a __quiet__ environment.
 Some noise reduction nodes may be helpful.
 
-The `KWSClassifier` node must be tune an improved.
+The `KWSClassifier` node must be tuned and improved (how long should the moving average be ?)
 
 `KWS` nodes inherit from `TFLite` node. It should be possible to support different networks easily. The `TFLite` node is generic (but more data conversion formats must be supported at input and output. And currently output of the node is float and should be configurable)
 
