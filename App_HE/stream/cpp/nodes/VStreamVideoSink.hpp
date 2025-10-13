@@ -45,9 +45,11 @@ class VStreamVideoSink : public StreamNode
         : StreamNode()
     {
 
-        displayStatus_t status;
 
-        lcd->Initialize(VStreamVideoSink::VideoSink_Event_Callback);
+        if (lcd->Initialize(VStreamVideoSink::VideoSink_Event_Callback) != DISPLAY_OK)
+        {
+            ERROR_PRINT("Failed to initialize LCD output\n");
+        }
 
         /* Set Input Video buffer */
         if (lcd->SetBuf(LCD_Frame, DISPLAY_IMAGE_SIZE) != DISPLAY_OK)

@@ -80,7 +80,7 @@
 #define RTE_DataExchange_Math_kissfft     /* kissfft */
 /* tensorflow::Data Processing:Math:ruy&tensorflow@1.25.2 */
 #define RTE_DataProcessing_Math_ruy     /* ruy */
-/* tensorflow::Machine Learning:TensorFlow:Kernel&CMSIS-NN@1.25.2 */
+/* tensorflow::Machine Learning:TensorFlow:Kernel&Ethos-U@1.25.2 */
 #define RTE_ML_TF_LITE     /* TF */
 /* tensorflow::Machine Learning:TensorFlow:Testing@1.25.2 */
 #define RTE_ML_TF_LITE     /* TF */
