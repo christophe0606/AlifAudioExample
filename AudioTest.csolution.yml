@@ -20,6 +20,10 @@ solution:
       ASM:
         - -gdwarf-5
 
+  define:
+    # For libspeex since it must also be defined for clients
+    - OS_SUPPORT_CUSTOM
+
   # List the packs that define the device and/or board.
   packs:
     - pack: AlifSemiconductor::Ensemble@2.0.2

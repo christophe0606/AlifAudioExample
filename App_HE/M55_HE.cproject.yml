@@ -84,6 +84,7 @@ project:
   layers:
     - layer: $Board-Layer$
       type: Board
+    - layer: ../speex.clayer.yml
 
   # List executable file formats to be generated.
   output:
