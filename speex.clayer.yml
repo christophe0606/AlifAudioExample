@@ -3,15 +3,14 @@ layer:
   description: Lib speex
   type: Component
 
-
-  groups:
-    - group: Libspeex
-      add-path:
+  add-path:
         - ./lib/speexdsp/include
         - ./lib/speexdsp/
         - ./lib/speexdsp/include/speex/
         - ./lib/speexdsp/libspeexdsp
 
+  groups:
+    - group: Libspeex
       files:
         - file: ./lib/speexdsp/libspeexdsp/buffer.c
         - file: ./lib/speexdsp/libspeexdsp/fftwrap.c

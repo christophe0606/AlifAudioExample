@@ -109,3 +109,10 @@ Camera and LCD buffers are allocated statically and put in specific memory secti
 Audio buffers are allocated dynamically once when the corresponding node is created.
 
 Uses CMSIS-RTOS2 API.
+
+## Lib Speex
+
+A customized Lib Speex (with some Helium optimizations) has been included.
+One node (SpeexPreprocess) is available and enable noise reduction.
+
+It is not used in the KWS example because the NN is not working very well on the output of this SpeexPreprocess node.

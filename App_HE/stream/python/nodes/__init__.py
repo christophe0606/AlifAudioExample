@@ -13,3 +13,5 @@ from .NullSink import *
 from .SRC import *
 from .SendToNetwork import *
 from .TFLite import *
+from .SpeexPreprocess import *
+from .StereoToMono import *
