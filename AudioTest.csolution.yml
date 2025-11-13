@@ -40,7 +40,7 @@ solution:
       target-set:
         - set:
           images:
-            - project-context: M55_HE.Debug
+            - project-context: M55_HE.Release
           debugger:
             name: ULINKplus@pyOCD
             port: 3333
@@ -55,7 +55,7 @@ solution:
 
     - type: Release
       debug: off
-      optimize: balanced
+      optimize: speed
 
   # List related projects.
   projects:
