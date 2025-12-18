@@ -1,6 +1,6 @@
 # A solution is a collection of related projects that share same base configuration.
 solution:
-  created-for: CMSIS-Toolbox@2.6.0
+  created-for: CMSIS-Toolbox@2.12.0
   language-C: c11
   language-CPP: c++17
   cdefault: # use CMSIS-Toolbox default Compiler options
@@ -40,7 +40,7 @@ solution:
       target-set:
         - set:
           images:
-            - project-context: M55_HE.Release
+            - project-context: M55_HE.Debug
           debugger:
             name: ULINKplus@pyOCD
             port: 3333
@@ -53,9 +53,17 @@ solution:
       debug: on
       optimize: none
 
+    - type: ExternalDebug
+      debug: on
+      optimize: none
+      define:
+        - EXTERNAL_NETWORK
+
     - type: Release
       debug: off
       optimize: speed
+      define:
+        - EXTERNAL_NETWORK
 
   # List related projects.
   projects:

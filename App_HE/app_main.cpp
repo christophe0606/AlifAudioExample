@@ -7,7 +7,6 @@
 #include "StreamNode.hpp"
 #include "cstream_node.h"
 
-
 extern "C"
 {
 #include "RTE_Components.h"
@@ -23,11 +22,18 @@ extern "C"
 #include "cg_queue.hpp"
 
 #include "appnodes/AppDisplay.hpp"
-#include "nodes/VStreamVideoSource.hpp"
 #include "nodes/VStreamAudioSink.hpp"
-
+#include "nodes/VStreamVideoSource.hpp"
 
 #include "cg_queue.hpp"
+
+#if defined(EXTERNAL_NETWORK)
+extern "C"
+{
+#include "md5.h"
+#include "network.h"
+}
+#endif
 
 #define NB_MAX_EVENTS 20
 #define NB_MAX_BUFS 20
@@ -57,8 +63,6 @@ uint8_t CAM_Frame[CAMERA_BUFFER_SIZE] CAMERA_FRAME_BUF_ATTRIBUTE;
 
 /* Display frame buffer */
 uint8_t LCD_Frame[DISPLAY_BUFFER_SIZE] DISPLAY_FRAME_BUF_ATTRIBUTE;
-
-
 
 int init_memory_pools()
 {
@@ -93,7 +97,6 @@ int init_memory_pools()
     return 0;
 }
 
-
 void VideoSrc_Event_Callback(uint32_t event)
 {
     if (event & VSTREAM_EVENT_EOS)
@@ -108,17 +111,13 @@ void VideoSrc_Event_Callback(uint32_t event)
         if (tid_interrupts != NULL)
             osThreadFlagsSet(tid_interrupts, VIDEO_SRC_EVT);
     }
-    
 }
 
-
 VStreamVideoSource *video_src = nullptr;
-
 
 void interrupt_thread(void *arg)
 {
     DEBUG_PRINT("Interrupt thread started\n");
-
 
     for (;;)
     {
@@ -128,7 +127,7 @@ void interrupt_thread(void *arg)
         {
             auto destination = LocalDestination{video_src, 0};
             auto evt = Event(kDo, kHighPriority);
-            
+
             DEBUG_PRINT("Push event for video src\n");
             bool ok = EventQueue::cg_eventQueue->push(destination, std::move(evt));
             if (!ok)
@@ -136,7 +135,6 @@ void interrupt_thread(void *arg)
                 ERROR_PRINT("Event queue overflow for video src\n");
             }
         }
-
     }
 
     // Cleanup and exit the thread if needed
@@ -169,7 +167,6 @@ void stream_thread(void *arg)
     uint32_t nb_iter;
     int error;
     DEBUG_PRINT("Stream thread started\n");
-    
 
     nb_iter = scheduler(&error);
     if (error != 0)
@@ -184,10 +181,29 @@ err_stream:
     osThreadExit();
 }
 
+#if defined(EXTERNAL_NETWORK)
+int check_network(const char *expected_md5_hex)
+{
+    unsigned char md5_sum[16];
+    char md5_hex[33];
+
+    const void *data = get_network_description();
+    size_t data_len = get_description_length();
+
+    md5_compute(data, data_len, md5_sum);
+    md5_to_hex(md5_sum, md5_hex);
+
+    if (std::strncmp(md5_hex, expected_md5_hex, 32) != 0)
+    {
+        return 0; // checksum does not match
+    }
+    return 1; // checksum matches
+}
+#endif
+
 int app_main(void)
 {
     CStreamNode *c_video_src = nullptr;
-    
 
     const osThreadAttr_t dispAttr = {
         .stack_size = 4096,
@@ -203,6 +219,14 @@ int app_main(void)
 
     const osThreadAttr_t audioAttr = {.stack_size = 4096,
                                       .priority = osPriorityRealtime};
+
+#if defined(EXTERNAL_NETWORK)
+    if (!check_network("c147eeaf87c900ff230950424d07ca07"))
+    {
+        ERROR_PRINT("Neural network checksum error\n");
+        return -1;
+    }
+#endif
     osKernelInitialize();
 
     tid_interrupts = osThreadNew(interrupt_thread, NULL, &interruptAttr);
@@ -246,8 +270,6 @@ int app_main(void)
 #else
     video_src = nullptr;
 #endif
-
-
 
     DEBUG_PRINT("Scheduler initialized successfully\n");
 
