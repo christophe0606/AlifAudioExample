@@ -1,0 +1,9 @@
+{
+    "clangd.arguments": [
+        "--compile-commands-dir=c:\\Users\\chrfav01\\benchresults\\Alif\\CFAV_Tests\\AudioTest\\out\\M55_HE\\AE722F80F55D5LS\\Debug"
+    ],
+    "debug.hideSlowPreLaunchWarning": true,
+    "cmake.ignoreCMakeListsMissing": true,
+    "git.branchProtectionPrompt": "alwaysCommit",
+    "debug.showInStatusBar": "never"
+}
