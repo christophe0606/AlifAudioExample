@@ -43,7 +43,8 @@
                 "load",
                 "--probe",
                 "cmsisdap:",
-                "App_HE/networks/networks.bin@C0000000",
+                "--cbuild-run",
+                "${workspaceFolder}/network.cbuild-run.yml"
             ],
             "problemMatcher": []
         },
@@ -103,8 +104,7 @@
         {
             "label": "CMSIS Load+Run",
             "dependsOn": [
-                "CMSIS Load",
-                "CMSIS Run"
+                "CMSIS Load"
             ],
             "dependsOrder": "sequence",
             "problemMatcher": []

@@ -10,13 +10,11 @@ project:
         - file: ./stream/cpp/kws_mfcc.c
         - file: ./stream/kws_img.c
 
-  
     - group: Stream
       files:
         - file: stream/cpp/cg_queue.cpp
         - file: stream/scheduler/scheduler.cpp
         - file: stream/cpp/node_globals.cpp
-        
 
     - group: Display
       files:
@@ -31,14 +29,13 @@ project:
           not-for-context: .Debug
         - file: networks/md5.c
           not-for-context: .Debug
-       
+
   define:
     - ACTIVATION_BUF_SZ: 131072
 
-
   add-path:
     - .
-    - stream/cpp 
+    - stream/cpp
     - stream
     - stream/scheduler
     - display
@@ -70,7 +67,8 @@ project:
 
     - component: Machine Learning:TensorFlow:Kernel Utils
     - component: Machine Learning:TensorFlow:Testing
-   
+    - component: Device:SOC Peripherals:OSPI
+    - component: BSP:OSPI FLASH XIP:core
 
   layers:
     - layer: $Board-Layer$

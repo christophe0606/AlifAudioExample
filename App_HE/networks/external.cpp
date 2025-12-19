@@ -26,7 +26,7 @@ typedef struct {
     nn_model_t *models;
 } nn_header_t;
 
-static const nn_header_t *nn_header=(nn_header_t *)APP_OSPI_FLASH_HE_BASE;
+static const nn_header_t *nn_header=reinterpret_cast<nn_header_t *>(reinterpret_cast<uint8_t*>(APP_OSPI_FLASH_HE_BASE));
 
 
 void *get_network_description()

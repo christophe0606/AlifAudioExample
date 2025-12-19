@@ -1,61 +1,45 @@
 {
-  "NullSink<sq15,1536>": {
+  "VStreamAudioSource<sq15,320>": {
     "isTemplate": true,
     "selectors": []
   },
-  "VStreamAudioSource<sq15,512>": {
+  "SlidingBuffer<float,640,320>": {
     "isTemplate": true,
     "selectors": []
   },
-  "DeinterleaveStereo<sf32,512,float,512,float,512>": {
+  "DeinterleaveStereo<sq15,320,q15_t,320,q15_t,320>": {
     "isTemplate": true,
     "selectors": []
   },
-  "Duplicate<float,512,float,512>": {
+  "MFCC<float,640,float,10>": {
     "isTemplate": true,
     "selectors": []
   },
-  "CFFT<cf32,512,cf32,512>": {
+  "SlidingBuffer<float,490,480>": {
     "isTemplate": true,
     "selectors": []
   },
-  "InterleaveStereo<float,1536,float,1536,sf32,1536>": {
+  "NullSink<q15_t,320>": {
     "isTemplate": true,
     "selectors": []
   },
-  "Mixer<float,512,float,512,float,512,float,512>": {
+  "SendToNetwork<float,490>": {
     "isTemplate": true,
     "selectors": []
   },
-  "Spectrogram<cf32,512>": {
+  "Convert<q15_t,320,float,320>": {
     "isTemplate": true,
     "selectors": []
   },
-  "SRC<float,512,float,1536>": {
-    "isTemplate": true,
-    "selectors": []
-  },
-  "RealToComplex<float,512,cf32,512>": {
-    "isTemplate": true,
-    "selectors": []
-  },
-  "Convert<sq15,512,sf32,512>": {
-    "isTemplate": true,
-    "selectors": []
-  },
-  "Convert<sf32,1536,sq15,1536>": {
-    "isTemplate": true,
-    "selectors": []
-  },
-  "Hanning<float,512,float,512>": {
-    "isTemplate": true,
-    "selectors": []
-  },
-  "AppDisplay": {
+  "KWSClassify": {
     "isTemplate": false,
     "selectors": []
   },
-  "VStreamVideoSource": {
+  "KWSDisplay": {
+    "isTemplate": false,
+    "selectors": []
+  },
+  "KWS": {
     "isTemplate": false,
     "selectors": []
   }

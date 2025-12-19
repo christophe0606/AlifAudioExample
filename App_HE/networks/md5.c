@@ -11,18 +11,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 #include "md5.h"
 
-/* -------- minimal mem helpers (avoid libc if you want) -------- */
-static void md5_memcpy(void *dst, const void *src, size_t n) {
-    uint8_t *d = (uint8_t*)dst;
-    const uint8_t *s = (const uint8_t*)src;
-    while (n--) *d++ = *s++;
-}
-static void md5_memset(void *dst, uint8_t v, size_t n) {
-    uint8_t *d = (uint8_t*)dst;
-    while (n--) *d++ = v;
-}
 
 /* -------- MD5 core -------- */
 typedef struct {
@@ -169,7 +160,7 @@ void md5_update(md5_ctx_t ctx_, const void *data, unsigned long len) {
         uint32_t space = 64u - ctx->buflen;
         uint32_t take = (len < space) ? (uint32_t)len : space;
 
-        md5_memcpy(ctx->buf + ctx->buflen, p, take);
+        memcpy(ctx->buf + ctx->buflen, p, take);
         ctx->buflen += take;
         p += take;
         len -= take;
@@ -185,18 +176,22 @@ void md5_final(md5_ctx_t ctx_, unsigned char out[16]) {
     MD5_CTX *ctx = ctx_;
     /* Padding: 0x80 then zeros, then 64-bit length (little endian) */
     uint8_t pad[64];
-    md5_memset(pad, 0, sizeof(pad));
+    memset(pad, 0, sizeof(pad));
     pad[0] = 0x80;
 
     /* how many padding bytes needed to reach 56 mod 64 */
     uint32_t mod = ctx->buflen;
     uint32_t padlen = (mod < 56u) ? (56u - mod) : (56u + 64u - mod);
 
+    /* Save original bit count before adding padding (padding must not
+       change the appended length field). */
+    uint64_t orig_bits = ctx->bits;
+
     md5_update(ctx, pad, padlen);
 
-    /* append length in bits as little-endian 64-bit */
+    /* append original length in bits as little-endian 64-bit */
     uint8_t lenle[8];
-    uint64_t bits = ctx->bits;
+    uint64_t bits = orig_bits;
     for (int i = 0; i < 8; i++) {
         lenle[i] = (uint8_t)(bits & 0xffu);
         bits >>= 8;
@@ -210,7 +205,7 @@ void md5_final(md5_ctx_t ctx_, unsigned char out[16]) {
     md5_store_le32(out +12, ctx->d);
 
     /* wipe state (optional) */
-    md5_memset(ctx, 0, sizeof(*ctx));
+    memset(ctx, 0, sizeof(*ctx));
 }
 
 void md5_compute(const void *data, unsigned long len, unsigned char out[16]) {

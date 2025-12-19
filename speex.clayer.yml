@@ -4,10 +4,10 @@ layer:
   type: Component
 
   add-path:
-        - ./lib/speexdsp/include
-        - ./lib/speexdsp/
-        - ./lib/speexdsp/include/speex/
-        - ./lib/speexdsp/libspeexdsp
+    - ./lib/speexdsp/include
+    - ./lib/speexdsp/
+    - ./lib/speexdsp/include/speex/
+    - ./lib/speexdsp/libspeexdsp
 
   groups:
     - group: Libspeex
@@ -30,8 +30,7 @@ layer:
           # FilterBank
         - OVERRIDE_SPEEX_ALLOC
         - OVERRIDE_FB_COMPUTE_BANK32
-        - OVERRIDE_FB_COMPUTE_PSD16
-          # ANR
+        - OVERRIDE_FB_COMPUTE_PSD16 # ANR
         - OVERRIDE_ANR_VEC_MUL
         - OVERRIDE_ANR_UPDATE_NOISE_ESTIMATE
         - OVERRIDE_ANR_APOSTERIORI_SNR
@@ -42,8 +41,7 @@ layer:
         - OVERRIDE_ANR_UPDATE_GAINS_LINEAR
         - OVERRIDE_ANR_APPLY_SPEC_GAIN
         - OVERRIDE_ANR_OLA
-        - OVERRIDE_ANR_UPDATE_NOISE_PROB
-          # MDF
+        - OVERRIDE_ANR_UPDATE_NOISE_PROB # MDF
         - OVERRIDE_MDF_DC_NOTCH
         - OVERRIDE_MDF_INNER_PROD
         - OVERRIDE_MDF_POWER_SPECTRUM
@@ -65,4 +63,3 @@ layer:
         - OVERRIDE_MDF_VEC_SCALE
         #- OVERRIDE_ANR_VEC_CONV_FROM_INT16
         - EXPORT: /**/
-
