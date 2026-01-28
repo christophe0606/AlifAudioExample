@@ -94,15 +94,7 @@ Warning : by default audio nodes are dataflow master. It can be changed from Pyt
 
 To create new display nodes, inherit from `VStreamVideoSink` and update the draw method.
 
-`vStreamVideoSink` no more use the `vStream` CMSIS driver so will have to be renamed.
-
-`vStreamVideoSource` use a custom `vStream` driver that is currently in `camera.c` file. (Otherwise every few hours there was a frame capture error with original driver)
-
-`vStreamAudioSource` is still using a `vStream` driver but it may have to be changed due to limitations for some graphs (you'll get an underflow error that could be avoided with a better source)
-
-`vStreamAudioSink` is not using a `vStream` driver but using directly the CMSIS SAI driver.
-
-In summary : input / output nodes will have to be renamed since none will use `vStream` in future.
+Need to updates comments about `vStream` CMSIS-Stream nodes. They'll need to be re-implemented.
 
 Camera and LCD buffers are allocated statically and put in specific memory sections.
 
