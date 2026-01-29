@@ -4,7 +4,7 @@
 #include "StreamNode.hpp"
 #include "arm_math_types.h"
 #include "cg_enums.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 
 
 using namespace arm_cmsis_stream;
@@ -22,15 +22,6 @@ class InterleaveStereo<float32_t, inputSamples, float32_t, inputSamples, sf32, i
     InterleaveStereo(FIFOBase<float32_t> &left, FIFOBase<float32_t> &right, FIFOBase<sf32> &dst)
         : GenericNode21<float32_t, inputSamples, float32_t, inputSamples, sf32, inputSamples>(left, right,dst) {};
 
-    int prepareForRunning() final
-    {
-        if ((this->willOverflow()) || (this->willUnderflow1()) || (this->willUnderflow2()))
-        {
-            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
-        }
-
-        return (0);
-    };
 
     int run() final
     {

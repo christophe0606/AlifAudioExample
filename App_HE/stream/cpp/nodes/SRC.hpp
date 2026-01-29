@@ -4,7 +4,7 @@
 #include "StreamNode.hpp"
 #include "arm_math_types.h"
 #include "cg_enums.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 
 #include "dsp/support_functions.h"
 #include "dsp/filtering_functions.h"
@@ -45,15 +45,6 @@ class SRC<float, inputSamples, float, outputSamples> : public GenericNode<float,
                                  inputSamples);
         };
 
-    int prepareForRunning() final
-    {
-        if ((this->willOverflow()) || (this->willUnderflow()))
-        {
-            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
-        }
-
-        return (0);
-    };
 
     int run() final
     {

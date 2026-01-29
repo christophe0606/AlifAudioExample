@@ -3,7 +3,7 @@
 
 
 #include "cg_enums.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 #include "StreamNode.hpp"
 #include "GenericNodes.hpp"
 #include "arm_math_types.h"
@@ -29,15 +29,6 @@ class NullSink: public GenericSink<OUT, outputSamples>
         
     };
 
-    int prepareForRunning() final
-    {
-        if (this->willUnderflow())
-        {
-            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
-        }
-
-        return (0);
-    };
 
     int run() final
     {

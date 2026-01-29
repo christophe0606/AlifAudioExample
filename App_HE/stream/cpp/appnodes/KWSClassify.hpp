@@ -32,8 +32,8 @@ class KWSClassify : public StreamNode
     };
 
   public:
-    KWSClassify()
-        : StreamNode()
+    KWSClassify(EventQueue *queue)
+        : StreamNode(), ev0(queue)
     {
         history.resize(historySize+1);
         for (auto &v : history)

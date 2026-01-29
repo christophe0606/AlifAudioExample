@@ -5,7 +5,7 @@
 #include "arm_math_types.h"
 #include "cg_enums.h"
 #include "config.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 #include "node_globals.hpp"
 
 #include "tensorflow/lite/c/common.h"
@@ -23,9 +23,10 @@ using namespace arm_cmsis_stream;
 class TFLite : public StreamNode
 {
   public:
-    TFLite(const uint8_t *nnModelAddr, uint32_t nnModelSize,uint32_t nbOutputs=1)
+    TFLite(EventQueue *queue, const uint8_t *nnModelAddr, uint32_t nnModelSize,uint32_t nbOutputs=1)
         : StreamNode(), tensorArenaAddr_(tensorArena),
-          tensorArenaSize_(sizeof(tensorArena)),initErrorOccured(false)
+          tensorArenaSize_(sizeof(tensorArena)),initErrorOccured(false),
+          ev(1 + nbOutputs, EventOutput(queue))
     {
 
         if (nnModelAddr == nullptr || nnModelSize == 0)
@@ -50,18 +51,13 @@ class TFLite : public StreamNode
         this->m_modelSize = nnModelSize;
         this->m_pAllocator = nullptr;
 
-        // First output is for the acknowledge event
-        ev = new EventOutput[1 + nbOutputs];
         
         
     }
 
     virtual ~TFLite()
     {
-        if (ev)
-        {
-            delete[] ev;
-        }
+        
     }
 
     cg_status init() final override
@@ -151,8 +147,7 @@ class TFLite : public StreamNode
             // this->LogInterpreterInfo();
         }
 
-        
-        if (ev)
+        if (!ev.empty())
         {
             ev[0].sendSync(kNormalPriority, kDo);
         }
@@ -247,7 +242,7 @@ class TFLite : public StreamNode
         // Synchronous send because it is sent from the context
         // of the processEvent call
         // and we do not care about the priority here
-        if (ev)
+        if (ev.size() > (size_t)(dstPort + 1))
         {
             ev[dstPort + 1].sendSync(kNormalPriority, kValue, std::move(tensor)); // Send the event to the subscribed nodes
         }
@@ -275,7 +270,7 @@ class TFLite : public StreamNode
                 sendTensor(outIndex, outputTensor);
             }
             // Send acknowledge event to the producer
-            if (ev)
+            if (!ev.empty())
             {
                 ev[0].sendSync(kNormalPriority, kDo);
             }
@@ -414,11 +409,13 @@ class TFLite : public StreamNode
 
     void subscribe(int outputPort, StreamNode &dst, int dstPort) final override
     {
-        if (outputPort >= (1+this->GetNumOutputs()))
+        if ((uint32_t)outputPort >= (1+this->GetNumOutputs()))
             return;
         if (outputPort < 0)
             return;
-        if (ev == nullptr)
+        if (ev.empty())
+            return;
+        if (ev.size() <= (size_t)outputPort)
             return;
         ev[outputPort].subscribe(dst, dstPort);
     }
@@ -445,5 +442,5 @@ class TFLite : public StreamNode
     bool initErrorOccured{false};
     uint32_t inputReceived{0};
 
-    EventOutput *ev = nullptr;
+    std::vector<EventOutput> ev;
 };

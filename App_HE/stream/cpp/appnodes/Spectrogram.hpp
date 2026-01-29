@@ -6,7 +6,7 @@ extern "C"
 }
 
 #include "cg_enums.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 #include "StreamNode.hpp"
 #include "GenericNodes.hpp"
 #include "arm_math_types.h"
@@ -24,8 +24,8 @@ class Spectrogram<cf32, inputSamples>
     : public GenericSink<cf32, inputSamples>
 {
   public:
-    Spectrogram(FIFOBase<cf32> &src)
-        : GenericSink<cf32, inputSamples>(src)
+    Spectrogram(FIFOBase<cf32> &src,EventQueue *queue)
+        : GenericSink<cf32, inputSamples>(src), ev0(queue)
     {
         mag = new float32_t[inputSamples >> 1];
     };
@@ -35,15 +35,6 @@ class Spectrogram<cf32, inputSamples>
         delete[] mag;
     }
 
-    int prepareForRunning() final
-    {
-        if (this->willUnderflow())
-        {
-            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
-        }
-
-        return (0);
-    };
 
     int run() final
     {

@@ -1,7 +1,7 @@
 #include "node_globals.hpp"
-#include "custom.hpp"
-#include "cstream_node.h"
-#include "scheduler.h"
+#include "app_config.hpp"
+
+
 
 // Audio output node global state
 // Used to communicate between SAI IRQ and audio output node

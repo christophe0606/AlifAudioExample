@@ -54,16 +54,6 @@ class SpeexPreprocess<q15_t, 256,
         }
     }
 
-    int prepareForRunning() final
-    {
-        if (this->willOverflow() ||
-            this->willUnderflow())
-        {
-            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
-        }
-
-        return (0);
-    };
 
     int run() final
     {

@@ -40,12 +40,11 @@ solution:
       target-set:
         - set:
           images:
-            - project-context: M55_HE.Release
+            - project-context: M55_HE.Debug
           debugger:
             name: ULINKplus@pyOCD
-            port: 3333
-            protocol: swd
             clock: 10000000
+            protocol: swd
 
   # List of different build configurations.
   build-types:

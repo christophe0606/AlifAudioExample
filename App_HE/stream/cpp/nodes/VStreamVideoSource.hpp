@@ -9,7 +9,7 @@
 #include "StreamNode.hpp"
 #include "arm_math_types.h"
 #include "cg_enums.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 
 extern "C"
 {
@@ -33,8 +33,8 @@ extern vDbgStreamDriver_t Driver_vDbgStreamVideoIn;
 class VStreamVideoSource : public StreamNode
 {
   public:
-    VStreamVideoSource()
-        : StreamNode()
+    VStreamVideoSource(EventQueue *queue)
+        : StreamNode(),ev0(queue)
     {
 
         vStream_VideoIn->Initialize(VideoSrc_Event_Callback);

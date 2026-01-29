@@ -29,24 +29,8 @@
 #include <vector>
 #include <cstring>
 #include <stdarg.h>
-
 #include "StreamNode.hpp"
-/*
-Defined in cg_enums.h by default but user
-may want to use a different header to define the
-error codes of the application
-*/
-#ifndef CG_SUCCESS_ID_CODE
-#define CG_SUCCESS_ID_CODE (CG_SUCCESS)
-#endif
 
-#ifndef CG_SKIP_EXECUTION_ID_CODE
-#define CG_SKIP_EXECUTION_ID_CODE (CG_SKIP_EXECUTION)
-#endif
-
-#ifndef CG_BUFFER_ERROR_ID_CODE
-#define CG_BUFFER_ERROR_ID_CODE (CG_BUFFER_ERROR)
-#endif
 
 /*
 
@@ -116,6 +100,8 @@ namespace arm_cmsis_stream
         virtual bool willOverflowWith(int nb) const = 0;
         virtual int nbSamplesInFIFO() const = 0;
         virtual int nbOfFreeSamplesInFIFO() const = 0;
+
+        virtual void reset() = 0;
     };
 
     template <typename T, int length, int isArray = 0, int isAsync = 0>
@@ -126,13 +112,19 @@ namespace arm_cmsis_stream
     class FIFO<T, length, 0, 0> : public FIFOBase<T>
     {
     public:
-        explicit FIFO(T *buffer, int delay = 0) : mBuffer(buffer), readPos(0), writePos(delay) {};
+        explicit FIFO(T *buffer, int delay = 0) : mBuffer(buffer), readPos(0), writePos(delay),delay_(delay) {};
 
         /* Constructor used for memory sharing optimization.
            The buffer is a shared memory wrapper */
-        explicit FIFO(void *buffer, int delay = 0) : mBuffer((T *)buffer), readPos(0), writePos(delay) {};
+        explicit FIFO(void *buffer, int delay = 0) : mBuffer((T *)buffer), readPos(0), writePos(delay),delay_(delay) {};
 
         void setBuffer(T *buffer) final override{ mBuffer = buffer; };
+
+        void reset() final override
+        {
+            readPos = 0;
+            writePos = delay_;
+        };
 
         /*
         FIFO are fixed and not made to be copied or moved.
@@ -208,6 +200,7 @@ namespace arm_cmsis_stream
     protected:
         T *mBuffer;
         int readPos, writePos;
+        const int delay_;
     };
 
     /* Buffer, Synchronous */
@@ -224,6 +217,11 @@ namespace arm_cmsis_stream
         void setBuffer(T *buffer)  final override { mBuffer = buffer; };
 
         bool isArray() const final override { return true; };
+
+        void reset() final override
+        {
+            return;
+        };
 
         /*
         FIFO are fixed and not made to be copied or moved.
@@ -293,10 +291,16 @@ namespace arm_cmsis_stream
     class FIFO<T, length, 0, 1> : public FIFOBase<T>
     {
     public:
-        explicit FIFO(T *buffer, int delay = 0) : mBuffer(buffer), readPos(0), writePos(delay) {};
-        explicit FIFO(void *buffer, int delay = 0) : mBuffer((T *)buffer), readPos(0), writePos(delay) {};
+        explicit FIFO(T *buffer, int delay = 0) : mBuffer(buffer), readPos(0), writePos(delay),delay_(delay) {};
+        explicit FIFO(void *buffer, int delay = 0) : mBuffer((T *)buffer), readPos(0), writePos(delay),delay_(delay) {};
 
         void setBuffer(T *buffer)  final override { mBuffer = buffer; };
+
+        void reset() final override
+        {
+            readPos = 0;
+            writePos = delay_;
+        };
 
         /*
         FIFO are fixed and not made to be copied or moved.
@@ -379,6 +383,7 @@ namespace arm_cmsis_stream
     protected:
         T *mBuffer;
         int readPos, writePos;
+        const int delay_;
     };
 
     /***************
@@ -392,7 +397,7 @@ namespace arm_cmsis_stream
     {
     public:
         virtual int run() = 0;
-        virtual int prepareForRunning() = 0;
+        virtual int prepareForRunning() {return (CG_SKIP_EXECUTION);};
         virtual ~NodeBase() {};
 
         NodeBase() : StreamNode() {};
@@ -755,18 +760,18 @@ namespace arm_cmsis_stream
         {
             if (this->willUnderflow())
             {
-                return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
+                return (CG_SKIP_EXECUTION); // Skip execution
             }
 
             for (unsigned int i = 0; i < this->getNbOutputs(); i++)
             {
                 if (this->willOverflow(i))
                 {
-                    return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
+                    return (CG_SKIP_EXECUTION); // Skip execution
                 }
             }
 
-            return (CG_SUCCESS_ID_CODE);
+            return (CG_SUCCESS);
         };
 
         int run() final
@@ -782,7 +787,7 @@ namespace arm_cmsis_stream
                 }
             }
 
-            return (CG_SUCCESS_ID_CODE);
+            return (CG_SUCCESS);
         };
     };
 
@@ -800,18 +805,18 @@ namespace arm_cmsis_stream
         {
             if (this->willUnderflow())
             {
-                return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
+                return (CG_SKIP_EXECUTION); // Skip execution
             }
 
             for (unsigned int i = 0; i < this->getNbOutputs(); i++)
             {
                 if (this->willOverflow(i))
                 {
-                    return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
+                    return (CG_SKIP_EXECUTION); // Skip execution
                 }
             }
 
-            return (CG_SUCCESS_ID_CODE);
+            return (CG_SUCCESS);
         };
 
         int run() final
@@ -824,7 +829,7 @@ namespace arm_cmsis_stream
                 memcpy(b, a, sizeof(IO) * inputOutputSize);
             }
 
-            return (CG_SUCCESS_ID_CODE);
+            return (CG_SUCCESS);
         };
     };
 

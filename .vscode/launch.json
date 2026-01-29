@@ -6,7 +6,7 @@
             "type": "gdbtarget",
             "request": "launch",
             "cwd": "${workspaceFolder}/",
-            "program": "out/M55_HE/AE722F80F55D5LS/Release/M55_HE.axf",
+            "program": "out/M55_HE/AE722F80F55D5LS/Debug/M55_HE.axf",
             "gdb": "arm-none-eabi-gdb",
             "preLaunchTask": "CMSIS Load",
             "initCommands": [
@@ -48,7 +48,7 @@
             "type": "gdbtarget",
             "request": "attach",
             "cwd": "${workspaceFolder}/",
-            "program": "out/M55_HE/AE722F80F55D5LS/Release/M55_HE.axf",
+            "program": "out/M55_HE/AE722F80F55D5LS/Debug/M55_HE.axf",
             "gdb": "arm-none-eabi-gdb",
             "initCommands": [
                 ""

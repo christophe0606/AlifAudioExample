@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cg_enums.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 #include "StreamNode.hpp"
 #include "GenericNodes.hpp"
 #include "arm_math_types.h"
@@ -31,15 +31,6 @@ class Hanning<float32_t, inputSamples, float32_t, inputSamples> : public Generic
         delete[] window;
     }
 
-    int prepareForRunning() final
-    {
-        if ((this->willOverflow()) || (this->willUnderflow()))
-        {
-            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
-        }
-
-        return (0);
-    };
 
     int run() final
     {

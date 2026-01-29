@@ -1,6 +1,6 @@
 
 #include "cg_enums.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 #include <cstdio>
 
 #include "EventQueue.hpp"
@@ -64,6 +64,9 @@ uint8_t CAM_Frame[CAMERA_BUFFER_SIZE] CAMERA_FRAME_BUF_ATTRIBUTE;
 
 /* Display frame buffer */
 uint8_t LCD_Frame[DISPLAY_BUFFER_SIZE] DISPLAY_FRAME_BUF_ATTRIBUTE;
+
+static arm_cmsis_stream::EventQueue *queue = nullptr;
+
 
 int init_memory_pools()
 {
@@ -130,7 +133,7 @@ void interrupt_thread(void *arg)
             auto evt = Event(kDo, kHighPriority);
 
             DEBUG_PRINT("Push event for video src\n");
-            bool ok = EventQueue::cg_eventQueue->push(destination, std::move(evt));
+            bool ok = queue->push(destination, std::move(evt));
             if (!ok)
             {
                 ERROR_PRINT("Event queue overflow for video src\n");
@@ -148,11 +151,10 @@ void event_thread(void *argument)
 
     DEBUG_PRINT("Event thread started\n");
 
-    arm_cmsis_stream::EventQueue::cg_eventQueue->execute();
+    queue->execute();
 
     // Delete the event queue
-    delete arm_cmsis_stream::EventQueue::cg_eventQueue;
-    arm_cmsis_stream::EventQueue::cg_eventQueue = nullptr;
+    delete queue;
 
 err_evt:
     DEBUG_PRINT("Event thread exit\n");
@@ -444,8 +446,8 @@ int app_main(void)
 
     // bin_mutex = osMutexNew(NULL);
 
-    arm_cmsis_stream::EventQueue::cg_eventQueue = new (std::nothrow) MyQueue(osPriorityLow, osPriorityNormal, osPriorityHigh);
-    if (arm_cmsis_stream::EventQueue::cg_eventQueue == nullptr)
+    queue = new (std::nothrow) MyQueue(osPriorityLow, osPriorityNormal, osPriorityHigh);
+    if (queue == nullptr)
     {
         ERROR_PRINT("Can't create CMSIS Event Queue\n");
         goto err_main;
@@ -453,7 +455,7 @@ int app_main(void)
 
     DEBUG_PRINT("Create nodes\n");
     // Init nodes and starts audio stream
-    err = init_scheduler();
+    err = init_scheduler(queue);
     if (err != CG_SUCCESS)
     {
         ERROR_PRINT("Error: Failure during scheduler initialization.\n");

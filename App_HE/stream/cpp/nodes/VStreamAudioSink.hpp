@@ -9,7 +9,7 @@
 #include "StreamNode.hpp"
 #include "arm_math_types.h"
 #include "cg_enums.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 
 #include "cmsis_os2.h"
 
@@ -210,15 +210,6 @@ endInit:        setVolume(volume);
         }
     }
 
-    int prepareForRunning() final
-    {
-        if (this->willUnderflow())
-        {
-            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
-        }
-
-        return (0);
-    };
 
     int run() final
     {

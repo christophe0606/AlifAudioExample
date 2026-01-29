@@ -26,13 +26,17 @@
 
 #include "cg_queue.hpp"
 #include "config.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 #include <cstdint>
 #include <variant>
 
 extern osThreadId_t cg_eventThread;
 
 using namespace arm_cmsis_stream;
+
+void *EventQueue::handlerData = nullptr;
+EventQueue::AppHandler EventQueue::handler = nullptr;
+std::atomic<bool> EventQueue::handlerReady_ = false;
 
 MyQueue::MyQueue(osPriority_t low, osPriority_t normal, osPriority_t high)
     : arm_cmsis_stream::EventQueue()
@@ -214,7 +218,7 @@ void MyQueue::execute()
                     else if (std::holds_alternative<DistantDestination>(msg.destination))
                     {
                         DistantDestination &dist = std::get<DistantDestination>(msg.destination);
-                        this->callHandler(dist.src_node_id, std::move(msg.event));
+                        this->callAsyncHandler(dist.src_node_id, std::move(msg.event));
                     }
                     osThreadSetPriority(tid, priorities[nb_priorities - 1]); // Back to highest priority
                 }

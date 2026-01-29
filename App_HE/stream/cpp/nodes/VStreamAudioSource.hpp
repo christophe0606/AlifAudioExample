@@ -5,7 +5,7 @@
 #include <new>
 
 #include "cg_enums.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 #include "StreamNode.hpp"
 #include "GenericNodes.hpp"
 #include "arm_math_types.h"
@@ -83,15 +83,6 @@ class VStreamAudioSource<sq15, outputSamples>
         delete[] (stereoBuffer);
     };
 
-    int prepareForRunning() final
-    {
-        if (this->willOverflow())
-        {
-            return (CG_SKIP_EXECUTION_ID_CODE); // Skip execution
-        }
-
-        return (0);
-    };
 
     int run() final
     {

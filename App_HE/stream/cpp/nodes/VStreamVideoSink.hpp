@@ -15,7 +15,7 @@
 #include "StreamNode.hpp"
 #include "arm_math_types.h"
 #include "cg_enums.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 
 extern "C"
 {

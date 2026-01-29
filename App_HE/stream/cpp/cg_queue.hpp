@@ -35,7 +35,7 @@ extern "C"
 }
 
 #include "cg_enums.h"
-#include "custom.hpp"
+#include "app_config.hpp"
 #include "StreamNode.hpp"
 #include "EventQueue.hpp"
 #include <utility>

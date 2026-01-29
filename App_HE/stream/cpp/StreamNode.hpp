@@ -8,7 +8,7 @@
  * Target Processor: Cortex-M and Cortex-A cores
  * --------------------------------------------------------------------
  *
- * Copyright (C) 2023-2025 ARM Limited or its affiliates. All rights reserved.
+ * Copyright (C) 2023-2026 ARM Limited or its affiliates. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -40,70 +40,62 @@
 #include <iostream>
 
 #include "cg_enums.h"
+#include "stream_platform_config.hpp"
 
-#define CG_TENSOR_NB_DIMS 8
+#ifndef CG_TENSOR_NB_DIMS
+#error "CG_TENSOR_NB_DIMS must be defined"
+#endif
 
 // Used for ListValue
 #ifndef CG_MK_LIST_EVENT_ALLOCATOR
-#define CG_MK_LIST_EVENT_ALLOCATOR(T) \
-    std::allocator<T> {}
+#error "CG_MK_LIST_EVENT_ALLOCATOR must be defined"
 #endif
 
 // Used for RawBuffer and Tensors
 #ifndef CG_MK_PROTECTED_BUF_ALLOCATOR
-#define CG_MK_PROTECTED_BUF_ALLOCATOR(T) \
-    std::allocator<T> {}
+#error "CG_MK_PROTECTED_BUF_ALLOCATOR must be defined"
 #endif
 
 // Used for mutexes used to protect access to the buffers
 // since they are allocated in a shared_ptr
 #ifndef CG_MK_PROTECTED_MUTEX_ALLOCATOR
-#define CG_MK_PROTECTED_MUTEX_ALLOCATOR(T) \
-    std::allocator<T> {}
+#error "CG_MK_PROTECTED_MUTEX_ALLOCATOR must be defined"
 #endif
 
 // Used only when CG_EVENTS_MULTI_THREAD is ON
 // but a definition is needed to build
 #ifndef CG_MUTEX
-#define CG_MUTEX int
+#error "CG_MUTEX must be defined"
 #endif
 
 #ifndef CG_MUTEX_ERROR_TYPE
-#define CG_MUTEX_ERROR_TYPE int
+#error "CG_MUTEX_ERROR_TYPE must be defined"
 #endif
 
 #ifndef CG_MUTEX_HAS_ERROR
-#define CG_MUTEX_HAS_ERROR(ERROR) false
+#error "CG_MUTEX_HAS_ERROR must be defined"
 #endif
 
 #ifndef CG_ENTER_CRITICAL_SECTION
-#define CG_ENTER_CRITICAL_SECTION(mutex, error)
+#error "CG_ENTER_CRITICAL_SECTION must be defined"
 #endif
 
 #ifndef CG_EXIT_CRITICAL_SECTION
-#define CG_EXIT_CRITICAL_SECTION(mutex, error)
+#error "CG_EXIT_CRITICAL_SECTION must be defined"
 #endif
 
 #ifndef CG_ENTER_READ_CRITICAL_SECTION
-#define CG_ENTER_READ_CRITICAL_SECTION(mutex, error)
+#error "CG_ENTER_READ_CRITICAL_SECTION must be defined"
 #endif
 
 #ifndef CG_EXIT_READ_CRITICAL_SECTION
-#define CG_EXIT_READ_CRITICAL_SECTION(mutex, error)
+#error "CG_EXIT_READ_CRITICAL_SECTION must be defined"
 #endif
 
 // Maximum number of values in a combined value
+
 #ifndef CG_MAX_VALUES
-#define CG_MAX_VALUES 8
-#endif
-
-
-#ifndef DEBUG_PRINT
-#define DEBUG_PRINT(...) //printf(__VA_ARGS__)
-#endif
-
-#ifndef ERROR_PRINT
-#define ERROR_PRINT(...) //printf(__VA_ARGS__)
+#error "CG_MAX_VALUES must be defined"
 #endif
 
 /* Node ID is -1 when nodes are not identified for the external world */
@@ -217,7 +209,7 @@ namespace arm_cmsis_stream
             }
             if (global_id_ == -1)
             {
-                ERROR_PRINT("Global id not set.\n");
+                LOG_ERR("Global id not set.\n");
                 return -1; // Error: Lock offset not set
             }
             return MemServer::mem_server->lock(global_id_);
@@ -231,7 +223,7 @@ namespace arm_cmsis_stream
             }
             if (global_id_ == -1)
             {
-                ERROR_PRINT("Global id not set.\n");
+                LOG_ERR("Global id not set.\n");
                 return -1; // Error: Lock offset not set
             }
             return MemServer::mem_server->read_lock(global_id_);
@@ -245,7 +237,7 @@ namespace arm_cmsis_stream
             }
             if (global_id_ == -1)
             {
-                ERROR_PRINT("Global id is not set.\n");
+                LOG_ERR("Global id is not set.\n");
                 return -1; // Error: Lock offset not set
             }
             return MemServer::mem_server->unlock(global_id_);
@@ -259,7 +251,7 @@ namespace arm_cmsis_stream
             }
             if (global_id_ == -1)
             {
-                ERROR_PRINT("Global id is not set.\n");
+                LOG_ERR("Global id is not set.\n");
                 return -1; // Error: Lock offset not set
             }
             return MemServer::mem_server->read_unlock(global_id_);
@@ -435,9 +427,10 @@ namespace arm_cmsis_stream
         {
         }
 
-        explicit UniquePtr(T *ptr,deleter_t d) noexcept
+        template <typename U>
+        explicit UniquePtr(U *ptr,deleter_t d) noexcept
         {
-            ptr_ = ptr;
+            ptr_ = const_cast<std::remove_const_t<U> *>(ptr);
             deleter_ = d;
         }
 
@@ -1550,8 +1543,13 @@ void PrintType(void)
                         new_lv->values[i] = lv->values[i];
                     }
                     new_lv->nb_values = lv->nb_values;
+                    data = std::move(new_lv);
                 }
-                data = std::move(new_lv);
+                else 
+                {
+                    event_id = kNoEvent;
+                    data = cg_value();
+                }
             }
             else
             {
@@ -1600,6 +1598,10 @@ void PrintType(void)
         static UniquePtr<ListValue> make_new_list_value()
         {
             void *p= CG_MK_LIST_EVENT_ALLOCATOR(ListValue).allocate(1);
+            if (p == nullptr)
+            {
+                return UniquePtr<ListValue>();
+            }
             ListValue *val = new (p) ListValue();
 
             return UniquePtr<ListValue>(val, Event::list_value_deleter);
