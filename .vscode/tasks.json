@@ -192,6 +192,15 @@
                 }
             },
             "problemMatcher": []
+        },
+        {
+            "label": "Show cbuild run file",
+            "type": "shell",
+            "command": "echo ${command:cmsis-csolution.getCbuildRunFile}",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always"
+            }
         }
     ]
 }

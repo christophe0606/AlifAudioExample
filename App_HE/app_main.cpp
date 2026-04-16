@@ -171,6 +171,7 @@ void stream_thread(void *arg)
     int error;
     DEBUG_PRINT("Stream thread started\n");
 
+
     nb_iter = scheduler(&error);
     if (error != 0)
     {
