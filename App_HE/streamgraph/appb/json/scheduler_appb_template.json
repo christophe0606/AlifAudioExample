@@ -1,0 +1,16 @@
+{
+    "EmptySource<q15_t,320>": {
+        "folder": "nodes/",
+        "isTemplate": true,
+        "templateArgs": "<q15_t,320>",
+        "typename": "EmptySource",
+        "isIdentified": true
+    },
+    "NullSink<q15_t,320>": {
+        "folder": "nodes/",
+        "isTemplate": true,
+        "templateArgs": "<q15_t,320>",
+        "typename": "NullSink",
+        "isIdentified": true
+    }
+}

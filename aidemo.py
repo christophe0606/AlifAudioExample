@@ -1,0 +1,55 @@
+import argparse
+from python.kws import generate_kws
+from python.camera import generate_camera
+from python.debug import generate_debug_a, generate_debug_b
+
+from python.generate import generate_common_files
+
+APPS = {'appa':generate_kws, 
+        'appb':generate_camera}
+
+APPS = {'appa':generate_debug_a,
+        'appb':generate_debug_b}
+
+parser = argparse.ArgumentParser(
+                    prog='aidemo',
+                    description='Regenerate parts of the demo')
+
+subparsers = parser.add_subparsers(dest="command",required=True,help='subcommand help')
+
+# create the parser for the "a" command
+parser_gen = subparsers.add_parser('gen', help='Regenerate an application')
+parser_gen.add_argument("--all", help="Regenerate all applications", action='store_true')
+parser_gen.add_argument("--size", help="Code size optimization enabled", action='store_true')
+parser_gen.add_argument('apps', nargs="*",choices=APPS, help='Application to regenerate')
+
+parser_flash = subparsers.add_parser('flash',help='Regenerate flash memory content')
+
+args = parser.parse_args()
+
+if args.command == "flash":
+    print("Not yet implemented")
+    exit(0)
+
+ALL_APPS = sorted(APPS.keys())
+
+if args.all:
+    args.apps = ALL_APPS
+else:
+    args.apps = sorted(args.apps)
+    
+apps = sorted(args.apps)
+for app in apps:
+    f = APPS[app]
+    print(f"=== Generating {app}...")
+    f(codeSizeOptimization=args.size)
+    print("")
+if args.size:
+    print("Regenerating all common files for code size optimization...")
+    print(ALL_APPS)
+    generate_common_files(all_apps=ALL_APPS)
+
+
+
+
+

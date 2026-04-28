@@ -3,43 +3,60 @@ project:
   device: :M55_HE
 
   groups:
-    - group: AudioApplication
+    - group: AIApplication
       files:
         - file: ./app_main.cpp
-        - file: ./camera.c
-        - file: ./stream/cpp/kws_mfcc.c
-        - file: ./stream/kws_img.c
+        - file: ./streamgraph/common/template_instantiations.cpp
+        - file: ./container.c 
+          not-for-context: .Debug
+        - file: ./md5.c 
+          not-for-context: .Debug
+       
 
-    - group: Stream
+    - group: appa
       files:
-        - file: stream/cpp/cg_queue.cpp
-        - file: stream/scheduler/scheduler.cpp
-        - file: stream/cpp/node_globals.cpp
+        - file: ./streamgraph/appa/scheduler_appa.cpp
+        - file: ./streamgraph/appa/appa_params.c
 
-    - group: Display
+    - group: appb
       files:
-        - file: display/lcd.c
+        - file: ./streamgraph/appb/scheduler_appb.cpp
+        - file: ./streamgraph/appb/appb_params.c
 
-    - group: Keyword Spotting ML models
+    - group: Stream runtime
       files:
-        - file: networks/network.cpp
-        - file: networks/kws_micronet_m_vela_H128.tflite.cpp
+        - file: "C:/Users/chrfav01/benchresults/CMSIS-Stream/platform/cmsis_rtos_runtime/stream_event_queue.cpp"
+        - file: "C:/Users/chrfav01/benchresults/CMSIS-Stream/platform/cmsis_rtos_runtime/stream_runtime_init.cpp"
+
+    - group: Stream nodes
+      files:
+        - file: streamgraph/nodes_src/camera.c 
+        - file: streamgraph/nodes_src/kws_img.c 
+        - file: streamgraph/nodes_src/kws_mfcc.c
+        - file: streamgraph/nodes_src/lcd.c
+        - file: streamgraph/nodes_src/init_drv_src.cpp
+
+
+    - group: ML models
+      files:
+        - file: ./../networks/network.cpp
+        - file: ./../networks/kws_micronet_m_vela_H128.tflite.cpp
           for-context: .Debug
-        - file: networks/external.cpp
-          not-for-context: .Debug
-        - file: networks/md5.c
-          not-for-context: .Debug
-
-  define:
-    - ACTIVATION_BUF_SZ: 131072
 
   add-path:
     - .
-    - stream/cpp
-    - stream
-    - stream/scheduler
-    - display
-    - networks
+    - ./streamgraph/stream_nodes
+    - ./streamgraph/common
+    - ./streamgraph
+    - ./streamgraph/nodes_src
+    - "C:/Users/chrfav01/benchresults/CMSIS-Stream/platform"
+    - "C:/Users/chrfav01/benchresults/CMSIS-Stream/platform/cmsis_rtos_runtime"
+    - ./../networks
+    - ./streamgraph/appa
+    - ./streamgraph/appb
+
+  define:
+    - ACTIVATION_BUF_SZ: 131072
 
   # List components to use for your application.
   # A software component is a re-usable unit that may be configurable.
