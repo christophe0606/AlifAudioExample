@@ -11,12 +11,41 @@
 #include "GenericNodes.hpp"
 
 
-#include "nodes/EmptySource.hpp"
+#include "nodes/VStreamAudioSource.hpp"
+#include "nodes/SlidingBuffer.hpp"
+#include "nodes/DeinterleaveStereo.hpp"
+#include "appnodes/MFCC.hpp"
+#include "nodes/SlidingBuffer.hpp"
+#include "nodes/NullSink.hpp"
+#include "nodes/SendToNetwork.hpp"
+#include "nodes/Convert.hpp"
+#include "appnodes/KWSClassify.hpp"
+#include "appnodes/KWSDisplay.hpp"
+#include "appnodes/KWS.hpp"
 #include "nodes/NullSink.hpp"
 
-template class EmptySource<q15_t,320>;
-template CStreamNode createStreamNode(EmptySource<q15_t,320> &obj) ;
+template class VStreamAudioSource<sq15,320>;
+template CStreamNode createStreamNode(VStreamAudioSource<sq15,320> &obj) ;
+template class SlidingBuffer<float,640,320>;
+template CStreamNode createStreamNode(SlidingBuffer<float,640,320> &obj) ;
+template class DeinterleaveStereo<sq15,320,q15_t,320,q15_t,320>;
+template CStreamNode createStreamNode(DeinterleaveStereo<sq15,320,q15_t,320,q15_t,320> &obj) ;
+template class MFCC<float,640,float,10>;
+template CStreamNode createStreamNode(MFCC<float,640,float,10> &obj) ;
+template class SlidingBuffer<float,490,480>;
+template CStreamNode createStreamNode(SlidingBuffer<float,490,480> &obj) ;
 template class NullSink<q15_t,320>;
 template CStreamNode createStreamNode(NullSink<q15_t,320> &obj) ;
+template class SendToNetwork<float,490>;
+template CStreamNode createStreamNode(SendToNetwork<float,490> &obj) ;
+template class Convert<q15_t,320,float,320>;
+template CStreamNode createStreamNode(Convert<q15_t,320,float,320> &obj) ;
+template CStreamNode createStreamNode(KWSClassify &obj) ;
+template CStreamNode createStreamNode(KWSDisplay &obj) ;
+template class NullSink<sq15,320>;
+template CStreamNode createStreamNode(NullSink<sq15,320> &obj) ;
 
 // Selector initializations
+template<>
+std::array<uint16_t,1> SendToNetwork<float,490>::selectors = {SEL_ACK_ID};
+std::array<uint16_t,1> KWS::selectors = {SEL_ACK_ID};

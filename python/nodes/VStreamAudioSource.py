@@ -3,11 +3,12 @@ from cmsis_stream.cg.scheduler import GenericSource
 from .NodeTypes import *
 
 class VStreamAudioSource(GenericSource):
-    def __init__(self,name,outLength,master=True):
-        GenericSource.__init__(self,name)
+    def __init__(self,name,outLength):
+        GenericSource.__init__(self,name,identified=True)
         # Stereo output
         self.addOutput("o",Q15_STEREO,outLength)
-        self.addLiteralArg(1 if master else 0)
+        # hw_ is common to all node and does not name a specific node
+        self.addVariableArg(f"params->hw_")
 
     @property
     def typeName(self):

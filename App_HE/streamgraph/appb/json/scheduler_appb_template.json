@@ -1,15 +1,15 @@
 {
-    "EmptySource<q15_t,320>": {
+    "VStreamAudioSource<sq15,320>": {
         "folder": "nodes/",
         "isTemplate": true,
-        "templateArgs": "<q15_t,320>",
-        "typename": "EmptySource",
+        "templateArgs": "<sq15,320>",
+        "typename": "VStreamAudioSource",
         "isIdentified": true
     },
-    "NullSink<q15_t,320>": {
+    "NullSink<sq15,320>": {
         "folder": "nodes/",
         "isTemplate": true,
-        "templateArgs": "<q15_t,320>",
+        "templateArgs": "<sq15,320>",
         "typename": "NullSink",
         "isIdentified": true
     }

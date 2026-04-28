@@ -1,11 +1,11 @@
 #pragma once
 
+#include "EventQueue.hpp"
 #include "GenericNodes.hpp"
 #include "StreamNode.hpp"
 #include "arm_math_types.h"
 #include "cg_enums.h"
-#include "config.h"
-#include "app_config.hpp"
+
 
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
@@ -18,23 +18,24 @@
 #include <variant>
 
 #include "ethos_def.hpp"
-static uint8_t tensorArena[ACTIVATION_BUF_SZ] ACTIVATION_BUF_ATTRIBUTE;
 
+static uint8_t tensorArena[ACTIVATION_BUF_SZ] ACTIVATION_BUF_ATTRIBUTE;
 
 using namespace arm_cmsis_stream;
 
 class TFLite : public StreamNode
 {
   public:
+    enum selector {selAck=0};
     TFLite(EventQueue *queue, const uint8_t *nnModelAddr, uint32_t nnModelSize,uint32_t nbOutputs=1)
-        : StreamNode(), tensorArenaAddr_(tensorArena),
+        : StreamNode(),tensorArenaAddr_(tensorArena),
           tensorArenaSize_(sizeof(tensorArena)),initErrorOccured(false),
           ev(1 + nbOutputs, EventOutput(queue))
     {
 
         if (nnModelAddr == nullptr || nnModelSize == 0)
         {
-            ERROR_PRINT("TFLite: Invalid model address or size\n");
+            LOG_ERR("TFLite: Invalid model address or size\n");
             initErrorOccured = true;
             return;
         }
@@ -42,7 +43,7 @@ class TFLite : public StreamNode
 
         if (this->m_pModel->version() != TFLITE_SCHEMA_VERSION)
         {
-            ERROR_PRINT("TFLite: Model's schema version %" PRIu32 " is not equal "
+            LOG_ERR("TFLite: Model's schema version %" PRIu32 " is not equal "
                         "to supported version %d.",
                         this->m_pModel->version(),
                         TFLITE_SCHEMA_VERSION);
@@ -55,12 +56,10 @@ class TFLite : public StreamNode
         this->m_pAllocator = nullptr;
 
         
-        
     }
 
     virtual ~TFLite()
     {
-        
     }
 
     cg_status init() final override
@@ -72,7 +71,7 @@ class TFLite : public StreamNode
         }
         if (this->m_modelAddr == nullptr || this->m_modelSize == 0)
         {
-            ERROR_PRINT("TFLite: Invalid model address or size\n");
+            LOG_ERR("TFLite: Invalid model address or size\n");
             return CG_INIT_FAILURE;
         }
         
@@ -85,20 +84,20 @@ class TFLite : public StreamNode
         if (!this->m_pAllocator)
         {
             /* Create an allocator instance */
-            DEBUG_PRINT("Creating allocator using tensor arena at 0x%p\n", tensorArenaAddr_);
+            LOG_DBG("Creating allocator using tensor arena at 0x%p\n", tensorArenaAddr_);
 
             this->m_pAllocator = tflite::MicroAllocator::Create(tensorArenaAddr_, tensorArenaSize_);
 
             if (!this->m_pAllocator)
             {
-                ERROR_PRINT("TFLite: Failed to create allocator\n");
+                LOG_ERR("TFLite: Failed to create allocator\n");
                 return CG_INIT_FAILURE;
             }
-            DEBUG_PRINT("TFLite: Created new allocator @ 0x%p\n", this->m_pAllocator);
+            LOG_DBG("TFLite: Created new allocator @ 0x%p\n", this->m_pAllocator);
         }
         else
         {
-            DEBUG_PRINT("Using existing allocator @ 0x%p\n", this->m_pAllocator);
+            LOG_DBG("Using existing allocator @ 0x%p\n", this->m_pAllocator);
         }
 
         this->m_pInterpreter = std::make_unique<tflite::MicroInterpreter>(
@@ -106,17 +105,17 @@ class TFLite : public StreamNode
 
         if (!this->m_pInterpreter)
         {
-            ERROR_PRINT("TFLite: Failed to allocate interpreter\n");
+            LOG_ERR("TFLite: Failed to allocate interpreter\n");
             return CG_INIT_FAILURE;
         }
 
         /* Allocate memory from the tensor_arena for the model's tensors. */
-        DEBUG_PRINT("TFLite: Allocating tensors\n");
+        LOG_DBG("TFLite: Allocating tensors\n");
         TfLiteStatus allocate_status = this->m_pInterpreter->AllocateTensors();
 
         if (allocate_status != kTfLiteOk)
         {
-            ERROR_PRINT("tensor allocation failed!\n");
+            LOG_ERR("tensor allocation failed!\n");
             return CG_INIT_FAILURE;
         }
 
@@ -130,7 +129,7 @@ class TFLite : public StreamNode
 
         if (this->m_input.empty() || this->m_output.empty())
         {
-            ERROR_PRINT("TFLite: Failed to get tensors\n");
+            LOG_ERR("TFLite: Failed to get tensors\n");
             return CG_INIT_FAILURE;
         }
         else
@@ -150,12 +149,13 @@ class TFLite : public StreamNode
             // this->LogInterpreterInfo();
         }
 
+        
         if (!ev.empty())
         {
-            ev[0].sendSync(kNormalPriority, kDo);
+            ev[0].sendSync(kNormalPriority, globalID(selAck)); // Notify that initialization is done
         }
         else {
-            ERROR_PRINT("TFLite: Failed to create event outputs\n");
+            LOG_ERR("TFLite: Failed to create event outputs\n");
         }
 
         this->m_inited = true;
@@ -180,7 +180,7 @@ class TFLite : public StreamNode
                     offset = quantParams->zero_point->data[0];
                 }
             }
-            else if (t->params.scale != 0.0)
+            else if (t->params.scale != 0.0f)
             {
                 /* Legacy tensorflow quantisation parameters */
                 scale = t->params.scale;
@@ -191,9 +191,9 @@ class TFLite : public StreamNode
 
     void sendTensor(int dstPort, TfLiteTensor *t)
     {
-        if (dstPort >= this->GetNumOutputs())
+        if ((uint32_t)dstPort >= this->GetNumOutputs())
             return;
-        size_t bytes = t->bytes;
+        //size_t bytes = t->bytes;
         size_t elements = 1;
         cg_tensor_dims_t dims;
         for (int i = 0; i < t->dims->size; i++)
@@ -234,7 +234,7 @@ class TFLite : public StreamNode
         }
         default:
         {
-            ERROR_PRINT("TFLite: Unsupported data type %d\n", t->type);
+            LOG_ERR("TFLite: Unsupported data type %d\n", t->type);
             return;
         }
         }
@@ -251,18 +251,20 @@ class TFLite : public StreamNode
         }
     }
 
+    // Selector array is initialized in the derived class
+    virtual int globalID(int localID) = 0;
+
     void tryInference()
     {
         uint32_t nb = this->GetNumInputs();
         // If all inputs have been received
-        if (inputReceived == ((1 << nb) - 1))
+        if ((int)inputReceived == ((1 << nb) - 1))
         {
-            DEBUG_PRINT("Inference\n");
             inputReceived = 0;
             TfLiteStatus invoke_status = this->m_pInterpreter->Invoke();
             if (invoke_status != kTfLiteOk)
             {
-                ERROR_PRINT("TFLite: Invoke failed on model\n");
+                LOG_ERR("TFLite: Invoke failed on model\n");
                 return;
             }
             // Output tensors are ready
@@ -275,7 +277,7 @@ class TFLite : public StreamNode
             // Send acknowledge event to the producer
             if (!ev.empty())
             {
-                ev[0].sendSync(kNormalPriority, kDo);
+                ev[0].sendSync(kNormalPriority, globalID(selAck));
             }
         }
     }
@@ -284,7 +286,7 @@ class TFLite : public StreamNode
     void convertReceivedF32Tensor(int dstPort, TensorPtr<T> &&input)
     {
 
-        if (dstPort >= this->GetNumInputs())
+        if ((size_t)dstPort >= this->GetNumInputs())
             return;
 
         TfLiteTensor *inputTensor = this->m_input.at(dstPort);
@@ -340,7 +342,7 @@ class TFLite : public StreamNode
                                 }
                                   break;
                               default:
-                                  ERROR_PRINT("TFLite: Unsupported tensor input data type %d\n", inputTensor->type);
+                                  LOG_ERR("TFLite: Unsupported tensor input data type %d\n", inputTensor->type);
                                   return;
                               } });
 
@@ -351,7 +353,7 @@ class TFLite : public StreamNode
     void convertReceivedInt8Tensor(int dstPort, TensorPtr<T> &&input)
     {
 
-        if (dstPort >= this->GetNumInputs())
+        if ((size_t)dstPort >= this->GetNumInputs())
             return;
 
         
@@ -375,7 +377,7 @@ class TFLite : public StreamNode
                                   break;
                               break;
                               default:
-                                  ERROR_PRINT("TFLite: Unsupported tensor input data type %d\n", inputTensor->type);
+                                  LOG_ERR("TFLite: Unsupported tensor input data type %d\n", inputTensor->type);
                                   return;
                               }
                             
@@ -385,7 +387,6 @@ class TFLite : public StreamNode
 
     void processEvent(int dstPort, Event &&evt) final override
     {
-        DEBUG_PRINT("TFLite: Event %d received on port %d\n", evt.event_id, dstPort);
 
         if (evt.event_id == kValue)
         {

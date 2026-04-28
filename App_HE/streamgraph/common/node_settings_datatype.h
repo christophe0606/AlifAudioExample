@@ -4,25 +4,28 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+
+#include "RTE_Components.h"
+#include CMSIS_device_header
+#include "cmsis_vstream.h"
+#include "cmsis_os2.h" /* CMSIS-RTOS2 API */
+
+
 #ifdef   __cplusplus
 extern "C"
 {
 #endif
 
-#if 0
-typedef struct
-{
-    volatile uint32_t currentIndex;
-    volatile uint32_t transmitIndex;
-    uint32_t bufferSize;
-    uint8_t *audioBuffer;
-} audioOutputGlobalState_t;
-#endif 
-
 struct emptySourceParams
 {
     int value;
 };
+
+struct classifyParams
+{
+    int historyLength;
+};
+
 
 struct tfliteNodeParams
 {
@@ -38,7 +41,8 @@ struct tfliteNodeParams
  */
 struct hardwareParams
 {
-   const void *i2s_mic;
+   const vStreamDriver_t *audio_src;
+   osEventFlagsId_t audioSrcEvent;
 };
 
 #ifdef   __cplusplus

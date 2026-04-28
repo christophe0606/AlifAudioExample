@@ -7,7 +7,8 @@ struct AppbParams appbParams = {
     // Initialize parameters for each node as needed
     // hw is common to all node and does not name a specific node
     .hw_ = {
-        .i2s_mic = NULL // To be set to the I2S device
+        .audio_src = NULL, // This will be set in main.cpp after initializing the audio source driver
+        .audioSrcEvent = 0   // This will be set in main.cpp after initializing
     },
     .audioSource = {
         .value = 0 // Example value

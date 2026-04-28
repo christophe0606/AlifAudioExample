@@ -1,5 +1,6 @@
 #pragma once
 
+#include "stream_platform_config.hpp"
 #include CMSIS_device_header
 
 #include <new>
@@ -18,7 +19,6 @@
 
 using namespace arm_cmsis_stream;
 
-#define VSTREAM_STEREO_SOURCE_BLOCK_COUNT (2)
 
 extern vStreamDriver_t Driver_vStreamAudioIn;
 #define vStream_AudioIn (&Driver_vStreamAudioIn)
@@ -32,112 +32,85 @@ class VStreamAudioSource;
 
 template <int outputSamples>
 class VStreamAudioSource<sq15, outputSamples>
-    : public GenericSource<sq15, outputSamples>
+    : public GenericSource<sq15, outputSamples>,public ContextSwitch
 {
     static_assert(AUDIO_BLOCK == outputSamples,
 		      "The audio source output size must match AUDIO_BLOCK");
 
   public:
-    static void AudioSourceDrv_Event_Callback(uint32_t event)
-    {
-        (void)event;
-        if (event & VSTREAM_EVENT_OVERFLOW)
-        {
-            if (tid_stream != NULL)
-                osThreadFlagsSet(tid_stream, AUDIO_SOURCE_OVERFLOW_EVENT);
-        }
-
-        if (tid_stream != NULL)
-           osThreadFlagsSet(tid_stream, AUDIO_SOURCE_FRAME_EVENT);
-    }
-
-    VStreamAudioSource(FIFOBase<sq15> &dst,int master=1)
-        : GenericSource<sq15, outputSamples>(dst), master_(master)
-    {
-
-        stereoBuffer = new (std::align_val_t(64)) sq15[VSTREAM_STEREO_SOURCE_BLOCK_COUNT * outputSamples];
-        
-        /* Initialize audio in stream and set the receive buffer */
-        if (vStream_AudioIn->Initialize(AudioSourceDrv_Event_Callback) != VSTREAM_OK)
-        {
-            ERROR_PRINT("vStream_AudioIn Initialize error\n");
-            initErrorOccurred = true;
-            delete[] (stereoBuffer);
-        }
-        
-        if (vStream_AudioIn->SetBuf(stereoBuffer,
-                                VSTREAM_STEREO_SOURCE_BLOCK_COUNT * sizeof(sq15) * outputSamples,
-                                sizeof(sq15) * outputSamples) != VSTREAM_OK)
-        {
-            ERROR_PRINT("vStream_AudioIn SetBuf error\n");
-            initErrorOccurred = true;
-            vStream_AudioIn->Uninitialize();
-            delete[] (stereoBuffer);
-        }
-
-        
-    };
+    
+    VStreamAudioSource(FIFOBase<sq15> &dst,const struct hardwareParams &settings)
+        : GenericSource<sq15, outputSamples>(dst),settings_(settings)
+    {};
 
    
     ~VStreamAudioSource()
     {
-        /* Stop audio receiver */
-        vStream_AudioIn->Stop();
-        delete[] (stereoBuffer);
     };
+
+    int pause() final
+	{
+		// Implementation of pause
+		if (started_.load() == false) {
+			// If it was never started, nothing to do
+			return 0;
+		}
+        int32_t rc = settings_.audio_src->Stop();
+		if (rc != VSTREAM_OK) {
+			CMSISSTREAM_LOG_ERR("I2S_TRIGGER_STOP failed: %i", rc);
+		}
+		started_.store(false);
+		return 0;
+	}
+
+    int resume() final
+	{
+		// Implementation of resume
+		return 0;
+	}
 
 
     int run() final
-    {
-        if (!started)
-        {
-            started = true;
-            if (vStream_AudioIn->Start(VSTREAM_MODE_CONTINUOUS) != VSTREAM_OK)
+	{
+		size_t size;
+		if (!started_.load()) {
+			CMSISSTREAM_LOG_DBG("Starting RX");
+			
+			if (vStream_AudioIn->Start(VSTREAM_MODE_CONTINUOUS) != VSTREAM_OK)
             {
-                 ERROR_PRINT("vStream_AudioIn Start error\n");
+                 CMSISSTREAM_LOG_ERR("vStream_AudioIn Start error\n");
                  return(CG_INIT_FAILURE);
             }
-            //uint32_t ticks = osKernelGetTickCount();
-            //uint32_t tickFreq = osKernelGetTickFreq();
-            //printf("src start time %f ms\n",1.0f * ticks / tickFreq * 1000.0f);
 
-            osThreadFlagsWait(AUDIO_SOURCE_FRAME_EVENT|AUDIO_SOURCE_OVERFLOW_EVENT, osFlagsWaitAny, osWaitForever);
-            
-        }
-        else if (master_)
-        {
-            uint32_t flags = osThreadFlagsWait(AUDIO_SOURCE_FRAME_EVENT|AUDIO_SOURCE_OVERFLOW_EVENT, osFlagsWaitAny, osWaitForever);
-            if (flags & AUDIO_SOURCE_OVERFLOW_EVENT)
-            {
-                return (CG_BUFFER_OVERFLOW);
-            }
+			started_.store(true);
+		}
+
+        uint32_t res = osEventFlagsWait(settings_.audioSrcEvent, AUDIO_SOURCE_FRAME_EVENT|AUDIO_SOURCE_OVERFLOW_EVENT, osFlagsWaitAny, osWaitForever);
+        if ((res & AUDIO_SOURCE_OVERFLOW_EVENT) != 0) {
+            CMSISSTREAM_LOG_ERR("Audio source overflow detected\n");
+            return(CG_BUFFER_OVERFLOW);
         }
 
-        //uint32_t ticks = osKernelGetTickCount();
-        //uint32_t tickFreq = osKernelGetTickFreq();
-        //printf("src time %f ms\n",1.0f * ticks / tickFreq * 1000.0f);
+        sq15 *buf = (sq15 *)settings_.audio_src->GetBlock();
+		sq15 *out = this->getWriteBuffer();
+		memset(out, 0, outputSamples * sizeof(sq15));
+		
 
-        
-        sq15 *buf = (sq15 *)vStream_AudioIn->GetBlock();
-        sq15 *out = this->getWriteBuffer();
-        if (buf)
-        {
-            memcpy(out, buf, outputSamples * sizeof(sq15));
-            vStream_AudioIn->ReleaseBlock();
+		if (buf == nullptr) {
+			CMSISSTREAM_LOG_ERR("vStream getBlock failed");
+            settings_.audio_src->Stop();
+			return (CG_BUFFER_UNDERFLOW);
+		}
 
-        }
-        else 
-        {
-            ERROR_PRINT("vStream_AudioIn GetBlock error\n");
-            return(CG_BUFFER_UNDERFLOW);
-        }
+        memcpy(out, buf, outputSamples * sizeof(sq15));
+        settings_.audio_src->ReleaseBlock();
+		return (CG_SUCCESS);
+	};
 
-        return (CG_SUCCESS);
-    };
+    
 
   protected:
-    bool started{false};
-    sq15 *stereoBuffer;
-    int master_;
-    bool initErrorOccurred{false};
+    std::atomic<bool> started_ = false;
+	const struct hardwareParams &settings_;
+
 };

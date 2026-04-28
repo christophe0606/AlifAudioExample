@@ -1,15 +1,27 @@
+#pragma once
 #include "nodes/TFLite.hpp"
-
 extern "C"
 {
-#include "network.h"
+#include "node_settings_datatype.h"
 }
 
 class KWS : public TFLite
 {
   public:
-    KWS(const uint8_t *nnModelAddr, uint32_t nnModelSize)
-        : TFLite(nnModelAddr, nnModelSize,1),mNbOutputs(1) {
+    // Array used to map local selector IDs to global selector ID
+    // Global IDs are graph dependent and may change when the node is used in different graphs.
+    // Here there is only one ID for the "ack" event defined in the Python
+    enum selector {selAck=0};
+    static std::array<uint16_t,1> selectors;
+
+    int globalID(int localID) override final
+    {
+        return selectors[localID];
+    }
+
+
+    KWS(EventQueue *queue,const struct tfliteNodeParams &params)
+        : TFLite(queue,params.modelAddr, params.modelSize,1),mNbOutputs(1) {
           };
 
     virtual ~KWS()
@@ -33,12 +45,12 @@ class KWS : public TFLite
 
         if (kTfLiteOk == this->m_opResolver.AddEthosU())
         {
-            DEBUG_PRINT("Added %s support to op resolver\n",
+            CMSISSTREAM_LOG_DBG("Added %s support to op resolver\n",
                         tflite::GetString_ETHOSU());
         }
         else
         {
-            ERROR_PRINT("Failed to add Arm NPU support to op resolver.");
+            CMSISSTREAM_LOG_ERR("Failed to add Arm NPU support to op resolver.");
             return false;
         }
         return true;

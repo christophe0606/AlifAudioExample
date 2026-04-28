@@ -14,7 +14,8 @@ struct AppaParams
     // Name of struct is the name of the node as defined
     // in Python graph.
     struct hardwareParams hw_;
-    struct emptySourceParams audioSource;
+    struct classifyParams classify;
+    struct tfliteNodeParams kws;
 };
 
 extern struct AppaParams appaParams;

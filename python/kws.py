@@ -40,7 +40,7 @@ def generate_kws(codeSizeOptimization=False ):
     
     send = SendToNetwork("send",F32_SCALAR,MFCC_FEATURES*NN_FEATURES)
     
-    kws = KWS("kws",addr="GetModelPointer()",size="GetModelLen()")
+    kws = KWS("kws")
     display = KWSDisplay("display") 
     
     classify = KWSClassify("classify")

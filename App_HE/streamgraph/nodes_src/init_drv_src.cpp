@@ -29,8 +29,7 @@ static sq15 stereoBuffer[VSTREAM_STEREO_SOURCE_BLOCK_COUNT * AUDIO_BLOCK];
 
 static osEventFlagsId_t cg_audioSrcEvent;
 
-#define AUDIO_SOURCE_FRAME_EVENT (1U << 0)
-#define AUDIO_SOURCE_OVERFLOW_EVENT (1U << 1)
+
 
 
 
@@ -45,9 +44,10 @@ static void AudioSourceDrv_Event_Callback(uint32_t event)
         osEventFlagsSet(cg_audioSrcEvent, AUDIO_SOURCE_FRAME_EVENT);
     }
 
-void *init_audio_source()
+vStreamDriver_t *init_audio_source(osEventFlagsId_t &audioSrcEvent)
 {
     cg_audioSrcEvent = osEventFlagsNew(NULL);
+    audioSrcEvent = cg_audioSrcEvent;
 
 
     if (vStream_AudioIn->Initialize(AudioSourceDrv_Event_Callback) != VSTREAM_OK)
@@ -55,5 +55,15 @@ void *init_audio_source()
             CMSISSTREAM_LOG_ERR("vStream_AudioIn Initialize error\n");
             return nullptr;
     }
-    return (void*)vStream_AudioIn;
+
+    if (vStream_AudioIn->SetBuf(stereoBuffer,
+                                VSTREAM_STEREO_SOURCE_BLOCK_COUNT * sizeof(sq15) * AUDIO_BLOCK,
+                            sizeof(sq15) * AUDIO_BLOCK) != VSTREAM_OK)
+    {
+            CMSISSTREAM_LOG_ERR("vStream_AudioIn SetBuf error\n");
+            vStream_AudioIn->Uninitialize();
+            return nullptr;
+    }
+
+    return vStream_AudioIn;
 }

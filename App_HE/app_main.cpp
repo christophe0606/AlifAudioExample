@@ -40,6 +40,8 @@ extern int app_main(void);
 #define NB_MAX_EVENTS 20
 #define NB_MAX_BUFS 20
 
+#define HAS_AUDIO_SRC
+
 using namespace arm_cmsis_stream;
 
 
@@ -229,16 +231,17 @@ int app_main(void)
 
 	*/
 
-#if defined(HAS_AUDIO)
-	k_mem_slab *mem_slab = nullptr;
-	const void *i2s_mic = init_audio_source(&mem_slab);
+#if defined(HAS_AUDIO_SRC)
+    osEventFlagsId_t audioSrcEvent;
+	const vStreamDriver_t *audioSrcDriver = init_audio_source(audioSrcEvent);
 
-	if (i2s_mic == nullptr) {
+	if (audioSrcDriver == nullptr) {
 		LOG_ERR("Error initializing audio source\n");
 		goto error;
 	}
 #else
-	const void *i2s_mic = nullptr;
+    osEventFlagsId_t audioSrcEvent = 0;
+	const vStreamDriver_t *audioSrcDriver = nullptr;
 #endif
 
 // Config button
@@ -297,7 +300,8 @@ int app_main(void)
 
 	*/
 #if 1
-    appaParams.audioSource.value = 0;
+    appaParams.kws.modelAddr = (uint8_t *)GetModelPointer();
+	appaParams.kws.modelSize = GetModelLen();
 	params[0] = reinterpret_cast<hardwareParams *>(&appaParams);
 
 	/*
@@ -315,10 +319,10 @@ int app_main(void)
 
 	/**
 	 * @brief Populate hardwareParams for each network
-	 * by setting the i2s_mic and mem_slab members.
 	 */
 	for (int network = 0; network < NB_APPS; network++) {
-		params[network]->i2s_mic = nullptr;
+		params[network]->audio_src = audioSrcDriver;
+		params[network]->audioSrcEvent = audioSrcEvent;
 	}
 
 	err = stream_init_memory();

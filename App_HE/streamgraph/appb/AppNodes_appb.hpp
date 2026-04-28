@@ -1,2 +1,2 @@
-#include "nodes/EmptySource.hpp"
+#include "nodes/VStreamAudioSource.hpp"
 #include "nodes/NullSink.hpp"

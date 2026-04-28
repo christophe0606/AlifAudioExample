@@ -1,35 +1,36 @@
 #pragma once
 
-extern "C"
-{
-#include "config.h"
-}
 
-#include "GenericNodes.hpp"
+#include "EventQueue.hpp"
 #include "StreamNode.hpp"
+#include "GenericNodes.hpp"
 #include "arm_math_types.h"
 #include "cg_enums.h"
-#include "app_config.hpp"
 #include <cstring>
 #include <atomic>
 
 using namespace arm_cmsis_stream;
 
 template <typename IN, int inputSamples>
-class SendToNetwork : public GenericSink<IN, inputSamples>
+class SendToNetwork : public GenericSink<IN, inputSamples>, public ContextSwitch
 {
   public:
-    SendToNetwork(FIFOBase<IN> &src,EventQueue *queue)
+    // Array used to map local selector IDs to global selector ID
+    // Global IDs are graph dependent and may change when the node is used in different graphs.
+    // Here there is only one ID for the "ack" event defined in the Python
+    enum selector {selAck=0};
+    static std::array<uint16_t,1> selectors;
+
+    SendToNetwork(FIFOBase<IN> &src, EventQueue *queue)
         : GenericSink<IN, inputSamples>(src), ev0(queue) {
           };
 
-
+   
     int run() override final
     {
         IN *in = this->getReadBuffer();
         if (ready.load())
         {
-            DEBUG_PRINT("SendToNetwork: send buffer\n");
 
             UniquePtr<IN> tensorData(inputSamples);
             memcpy(tensorData.get(), in, inputSamples * sizeof(IN));
@@ -41,7 +42,7 @@ class SendToNetwork : public GenericSink<IN, inputSamples>
 
             if (!status)
             {
-                ERROR_PRINT("SendToNetwork: Failed to send event to network\n");
+                //LOG_ERR("SendToNetwork: Failed to send event to network\n");
             }
             else 
             {
@@ -52,12 +53,25 @@ class SendToNetwork : public GenericSink<IN, inputSamples>
         return (CG_SUCCESS);
     };
 
+    int pause() final override
+	{
+        // So that a new frame can be sent after resume
+        ready.store(true);
+		return 0;
+	}
+
+	int resume() final override
+	{
+
+		return 0;
+	}
+
     void processEvent(int dstPort, Event &&evt) final override
     {
-        DEBUG_PRINT("SendToNetwork: Event %d received on port %d\n", evt.event_id, dstPort);
         if (dstPort == 0)
         {
-            if (evt.event_id == kDo)
+            // If "ack" event was received
+            if (evt.event_id == selectors[selAck])
             {
                 ready.store(true);
             }

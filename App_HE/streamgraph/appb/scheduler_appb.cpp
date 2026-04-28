@@ -122,18 +122,18 @@ FIFO buffers
 ************/
 #define FIFOSIZE0 320
 
-#define BUFFERSIZE0 640
+#define BUFFERSIZE0 1280
 CG_BEFORE_BUFFER
 uint8_t stream_appb_buf0[BUFFERSIZE0]={0};
 
 
 typedef struct {
-FIFO<q15_t,FIFOSIZE0,1,0> *fifo0;
+FIFO<sq15,FIFOSIZE0,1,0> *fifo0;
 } fifos_t;
 
 typedef struct {
-    EmptySource<q15_t,320> *audioSource;
-    NullSink<q15_t,320> *sink;
+    VStreamAudioSource<sq15,320> *audioSource;
+    NullSink<sq15,320> *sink;
 } nodes_t;
 
 
@@ -160,7 +160,7 @@ int init_scheduler_appb(void *evtQueue_,AppbParams *params)
     (void)evtQueue;
 
     CG_BEFORE_FIFO_INIT;
-    fifos.fifo0 = new (std::nothrow) FIFO<q15_t,FIFOSIZE0,1,0>(stream_appb_buf0);
+    fifos.fifo0 = new (std::nothrow) FIFO<sq15,FIFOSIZE0,1,0>(stream_appb_buf0);
     if (fifos.fifo0==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
@@ -169,7 +169,7 @@ int init_scheduler_appb(void *evtQueue_,AppbParams *params)
     CG_BEFORE_NODE_INIT;
     cg_status initError;
 
-    nodes.audioSource = new (std::nothrow) EmptySource<q15_t,320>(*(fifos.fifo0));
+    nodes.audioSource = new (std::nothrow) VStreamAudioSource<sq15,320>(*(fifos.fifo0),params->hw_);
     if (nodes.audioSource==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);
@@ -177,7 +177,7 @@ int init_scheduler_appb(void *evtQueue_,AppbParams *params)
     identifiedNodes[STREAM_APPB_AUDIOSOURCE_ID]=createStreamNode(*nodes.audioSource);
     nodes.audioSource->setID(STREAM_APPB_AUDIOSOURCE_ID);
 
-    nodes.sink = new (std::nothrow) NullSink<q15_t,320>(*(fifos.fifo0));
+    nodes.sink = new (std::nothrow) NullSink<sq15,320>(*(fifos.fifo0));
     if (nodes.sink==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);

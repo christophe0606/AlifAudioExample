@@ -14,7 +14,7 @@ digraph structs {
 audioSource [label=<
 <TABLE color="black" bgcolor="none" BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
   <TR>
-    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">audioSource<BR/>(EmptySource)</FONT></TD>
+    <TD ALIGN="CENTER" PORT="i"><FONT COLOR="black" POINT-SIZE="14.0">audioSource<BR/>(VStreamAudioSource)</FONT></TD>
   </TR>
 </TABLE>>];
 
@@ -27,7 +27,7 @@ sink [label=<
 
 
 
-audioSource:i -> sink:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<q15(320)>
+audioSource:i -> sink:i [style="solid",color="black",fontsize="12.0",fontcolor="black",label=<sq15(320)>
 ,headlabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >320</FONT>
 </TD></TR></TABLE>>
 ,taillabel=<<TABLE BORDER="0" CELLPADDING="4"><TR><TD><FONT COLOR="blue" POINT-SIZE="12.0" >320</FONT>

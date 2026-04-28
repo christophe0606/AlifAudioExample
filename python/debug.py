@@ -9,8 +9,8 @@ from .generate import generate
 def generate_debug(codeSizeOptimization=False,name="a" ):
     the_graph = Graph()
     NB = 320
-    src = EmptySource("audioSource",Q15_SCALAR,NB)
-    sink = NullSink("sink",Q15_SCALAR,NB)
+    src = src = VStreamAudioSource("audioSource",NB)
+    sink = NullSink("sink",Q15_STEREO,NB)
     
     the_graph.connect(src.o,sink.i)
    
