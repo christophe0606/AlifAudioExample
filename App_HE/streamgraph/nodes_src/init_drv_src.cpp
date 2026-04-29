@@ -85,10 +85,6 @@ void VideoSrc_Event_Callback(uint32_t event)
 
         /* LCD frame is available */
         osEventFlagsSet(videoSrcEvent, VIDEO_SOURCE_FRAME_EVENT);
-        if (vStream_VideoIn->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
-        {
-                CMSISSTREAM_LOG_ERR("Failed to start video capture\n");
-        }
     }
 }
 

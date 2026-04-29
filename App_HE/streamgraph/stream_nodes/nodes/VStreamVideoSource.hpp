@@ -92,10 +92,10 @@ class VStreamVideoSource : public StreamNode, public ContextSwitch
                 status = vStream_VideoIn->GetStatus();
             } while (status.active == 1U);
 
-            //if (vStream_VideoIn->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
-            //{
-            //    CMSISSTREAM_LOG_ERR("Failed to start video capture\n");
-            //}
+            if (vStream_VideoIn->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
+            {
+                //CMSISSTREAM_LOG_ERR("Failed to start video capture\n");
+            }
         }
     }
 
