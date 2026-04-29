@@ -60,11 +60,17 @@ class VStreamVideoSource : public StreamNode, public ContextSwitch
 			CMSISSTREAM_LOG_ERR("Video stop failed: %i", rc);
 		}
 		started_.store(false);
+		paused_.store(true);
 		return 0;
 	}
 
     int resume() final
 	{
+        paused_.store(false);
+        if (settings_.video_src->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
+        {
+                //CMSISSTREAM_LOG_ERR("Failed to start video capture\n");
+        }
 		Event evt(kDo, kNormalPriority);
         evt.setTTL(40);
 
@@ -101,10 +107,13 @@ class VStreamVideoSource : public StreamNode, public ContextSwitch
 
     void processEvent(int dstPort, Event &&evt) final
     {
+        if (paused_.load()) {
+            return;
+        }
         if (evt.event_id == kDo)
         {
             CMSISSTREAM_LOG_DBG("kDo for video source\n");
-            uint8_t *inFrame = (uint8_t *)vStream_VideoIn->GetBlock();
+            uint8_t *inFrame = (uint8_t *)settings_.video_src->GetBlock();
             if (inFrame != nullptr)
             {
                 //SCB_InvalidateDCache_by_Addr(inFrame, CAMERA_FRAME_SIZE);
@@ -131,6 +140,7 @@ class VStreamVideoSource : public StreamNode, public ContextSwitch
 
 protected:
     std::atomic<bool> started_ = false;
+    std::atomic<bool> paused_ = true;
     const struct hardwareParams &settings_;
     EventQueue *eventQueue;
     EventOutput ev0;

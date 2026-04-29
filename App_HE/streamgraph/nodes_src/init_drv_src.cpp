@@ -14,7 +14,7 @@ extern "C"
 #include "app_config.hpp"
 #include "cmsis_vstream.h"
 #include "datatypes.hpp"
-
+//#include "Driver_Touch_Screen.h"
 
 /* Camera frame buffer (RAW8 or RGB565) */
 uint8_t CAM_Frame[CAMERA_BUFFER_SIZE] CAMERA_FRAME_BUF_ATTRIBUTE;
@@ -107,3 +107,17 @@ vStreamDriver_t *init_video_source(const osEventFlagsId_t &event)
 
     return vStream_VideoIn;
 }
+
+/*
+extern ARM_DRIVER_TOUCH_SCREEN GT911;
+
+ARM_DRIVER_TOUCH_SCREEN *init_touch_screen()
+    if (GT911.Initialize() != ARM_DRIVER_OK)
+    {
+        CMSISSTREAM_LOG_ERR("Failed to initialize touch screen\n");
+        return nullptr;
+    }
+
+    return &GT911;
+}
+    */

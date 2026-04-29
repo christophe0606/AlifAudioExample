@@ -43,7 +43,7 @@ extern int app_main(void);
 
 using namespace arm_cmsis_stream;
 
-
+//static ARM_DRIVER_TOUCH_SCREEN *touchScreen;
 
 static arm_cmsis_stream::EventQueue *queue = nullptr;
 
@@ -65,7 +65,7 @@ using namespace arm_cmsis_stream;
 #define NB_APPS 2
 // 0 : KWS
 // 1 : Camera
-static int currentNetwork = 1;
+static int currentNetwork = 0;
 
 
 /**
@@ -80,19 +80,8 @@ static stream_execution_context_t contexts[NB_APPS];
  */
 static hardwareParams *params[NB_APPS];
 
-#if defined(HAS_BUTTON)
-void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
-{
-	if (NB_APPS == 1) {
-		// If there is only one network, we don't need to post events to switch between
-		// networks
-		return;
-	}
-	osEventFlagsSet(cg_interruptEvent, SWITCH_EVENT);
-	CMSISTREAM_LOG_DBG("Posted SWITCH_EVENT, old events=0x%08x\n", old);
-}
-#endif
 
+//static ARM_TOUCH_STATE touch_state;
 
 // Translate interrupt events into CMSIS Stream events
 void interrupt_thread_function(void *)
@@ -114,18 +103,26 @@ void interrupt_thread_function(void *)
 
 	for (;;) {
 		uint32_t res = osEventFlagsWait(cg_interruptEvent, 
-			SWITCH_EVENT | VIDEO_SOURCE_FRAME_EVENT, 
+			VIDEO_SOURCE_FRAME_EVENT, 
 			osFlagsWaitAny, 
-			osWaitForever);
-		if ((res & SWITCH_EVENT) != 0) {
-			CMSISSTREAM_LOG_DBG("Received Switching network event\n");
-			currentNetwork = (currentNetwork + 1) % NB_APPS;
-			LOG_DBG("Switching to network %d\n", currentNetwork);
-			stream_pause_current_scheduler();
-			stream_resume_scheduler(&contexts[currentNetwork]);
-			CMSISSTREAM_LOG_DBG("Context switch done\n");
+			100);
+		if (res == osFlagsErrorTimeout) {
+			#if 0
+			touchScreen->GetState(&touch_state);
+			if (touch_state.numtouches > 0)
+			{
+               CMSISSTREAM_LOG_DBG("Received Switching network event\n");
+			   currentNetwork = (currentNetwork + 1) % NB_APPS;
+			   LOG_DBG("Switching to network %d\n", currentNetwork);
+			   stream_pause_current_scheduler();
+			   stream_resume_scheduler(&contexts[currentNetwork]);
+			   CMSISSTREAM_LOG_DBG("Context switch done\n");
+			}
+			#endif
+				/* We can get touch events here and post them to the event queue if needed */
+			continue;
 		}
-		if ((res & VIDEO_SOURCE_FRAME_EVENT) != 0) {
+		else if ((res & VIDEO_SOURCE_FRAME_EVENT) != 0) {
 			CMSISSTREAM_LOG_DBG("Received new camera frame event\n");
 			Event evt(kDo, kNormalPriority);
 			evt.setTTL(40);
@@ -259,6 +256,9 @@ int app_main(void)
 
 	osEventFlagsId_t videoSrcEvent = 0;
 	const vStreamDriver_t *videoSrcDriver = nullptr;
+
+	//touchScreen = init_touch_screen();
+
 
 #if defined(HAS_AUDIO_SRC)
     audioSrcDriver = init_audio_source(audioSrcEvent);
