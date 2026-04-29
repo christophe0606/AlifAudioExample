@@ -40,7 +40,6 @@ extern int app_main(void);
 #define NB_MAX_EVENTS 20
 #define NB_MAX_BUFS 20
 
-#define HAS_AUDIO_SRC
 
 using namespace arm_cmsis_stream;
 
@@ -236,7 +235,7 @@ int app_main(void)
 	const vStreamDriver_t *audioSrcDriver = init_audio_source(audioSrcEvent);
 
 	if (audioSrcDriver == nullptr) {
-		LOG_ERR("Error initializing audio source\n");
+		CMSISSTREAM_LOG_ERR("Error initializing audio source\n");
 		goto error;
 	}
 #else
@@ -253,18 +252,18 @@ int app_main(void)
     err = setup_flash();
     if (err)
     {
-        LOG_ERR("Error initializing flash\n");
+        CMSISSTREAM_LOG_ERR("Error initializing flash\n");
         goto error;
     }
 	err = validate_container_description("c4b4312989d06dd45d92da7af0913afd");
 	if (err) 
 	{
-		LOG_ERR("Invalid container description in external flash\n");
+		CMSISSTREAM_LOG_ERR("Invalid container description in external flash\n");
 		goto error;
 	} 
 	else 
 	{
-		LOG_INF("Container description in external flash validated\n");
+		CMSISSTREAM_LOG_DBG("Container description in external flash validated\n");
 	}
 #endif
 
@@ -313,7 +312,8 @@ int app_main(void)
 	params[1] = reinterpret_cast<hardwareParams *>(&appbParams);
 
 #else
-	appaParams.audioSource.value = 0;
+	appaParams.kws.modelAddr = (uint8_t *)GetModelPointer();
+	appaParams.kws.modelSize = GetModelLen();
 	params[0] = reinterpret_cast<hardwareParams *>(&appaParams);
 #endif
 
@@ -370,7 +370,7 @@ int app_main(void)
     tid_interrupts = osThreadNew(interrupt_thread_function, NULL, &interrupt_thread_attr);
 	
 
-	printf("Initialize contexts");
+	printf("Initialize contexts\n");
 
 #if 1
 	contexts[0] = {
@@ -409,7 +409,7 @@ int app_main(void)
 		       .scheduler_length = STREAM_APPA_SCHED_LEN};
 #endif
 
-	printf("Try to start first network");
+	printf("Try to start first network\n");
 
 	/*
 

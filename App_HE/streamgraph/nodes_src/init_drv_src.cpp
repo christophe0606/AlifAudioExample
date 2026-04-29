@@ -27,7 +27,7 @@ extern vStreamDriver_t Driver_vStreamAudioIn;
 
 static sq15 stereoBuffer[VSTREAM_STEREO_SOURCE_BLOCK_COUNT * AUDIO_BLOCK];
 
-static osEventFlagsId_t cg_audioSrcEvent;
+static osEventFlagsId_t cg_audioSrcEvent= nullptr;
 
 
 
