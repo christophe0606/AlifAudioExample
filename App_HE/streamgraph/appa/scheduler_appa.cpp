@@ -309,7 +309,7 @@ int init_scheduler_appa(void *evtQueue_,AppaParams *params)
     identifiedNodes[STREAM_APPA_CLASSIFY_ID]=createStreamNode(*nodes.classify);
     nodes.classify->setID(STREAM_APPA_CLASSIFY_ID);
 
-    nodes.display = new (std::nothrow) KWSDisplay;
+    nodes.display = new (std::nothrow) KWSDisplay(evtQueue);
     if (nodes.display==NULL)
     {
         return(CG_MEMORY_ALLOCATION_FAILURE);

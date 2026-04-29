@@ -8,7 +8,11 @@ from cmsis_stream.cg.scheduler.graphviz import Style
 import argparse 
 import json
 
+import inspect
 
+def has_specializations(cls):
+    attr = inspect.getattr_static(cls, "specializations", None)
+    return isinstance(attr, classmethod)
 
 # Used to know the name of the json file containing template definitions required by an app
 def template_json_file_name(app):
@@ -84,7 +88,19 @@ def generate(app,the_graph,myStyle,codeSizeOptimization=False):
             key = f"{n.typeName}{n.ioTemplate()}"
             if key not in cpp_classes:
               isTemplate = True if n.ioTemplate() else False
-              cpp_classes[key] = {"folder":maybeFolder(n),"isTemplate":isTemplate,"templateArgs":n.ioTemplate(),"typename":n.typeName,"isIdentified":False}
+              specialized = False
+              if has_specializations(n.__class__):
+                  if isTemplate:
+                     #print(n.ioTemplate())
+                     if n.ioTemplate() in n.__class__.specializations():
+                        specialized = True
+              cpp_classes[key] = {"folder":maybeFolder(n),
+                                  "isTemplate":isTemplate,
+                                  "templateArgs":n.ioTemplate(),
+                                  "typename":n.typeName,
+                                  "isIdentified":False,
+                                  "specialized":specialized,
+                                  "hasSelectors":False}
               # If the node is identified, mark the class as requiring generation of C API
               if n.identified:
                  cpp_classes[key]["isIdentified"] = True
@@ -127,7 +143,7 @@ def generate(app,the_graph,myStyle,codeSizeOptimization=False):
             for desc in cpp_classes:
                 d = cpp_classes[desc]
                 type_desc = f"{d['typename']}{d['templateArgs']}"
-                if d["isTemplate"]:
+                if d["isTemplate"] and not d["specialized"]:
                    print(f"extern template class {type_desc};",file=f)
                 if d["isIdentified"]:
                    print(f"extern template CStreamNode createStreamNode({type_desc} &obj) ;",file=f)
@@ -222,17 +238,6 @@ extern "C"
             if headerNeeded:
                print(f'#include "{cpp_classes[h]["folder"]}{cpp_classes[h]["typename"]}.hpp"',file=f)
             
-        print("",file=f)
-        # Generate all template instantiations
-        for h in cpp_classes:
-            d = cpp_classes[h]
-            type_desc = f"{d['typename']}{d['templateArgs']}"
-            if d["isTemplate"]:
-                print(f"template class {type_desc};",file=f)
-            if d["isIdentified"]:
-                print(f"template CStreamNode createStreamNode({type_desc} &obj) ;",file=f)
-
-        
         # Generate initialization of all selectors
         print("\n// Selector initializations",file=f)
         
@@ -245,6 +250,18 @@ extern "C"
             else:
                print(f'std::array<uint16_t,{len(node["selectors"])}> {n}::selectors = {{{selString}}};',file=f)
   
+        print("",file=f)
+        # Generate all template instantiations
+        for h in cpp_classes:
+            d = cpp_classes[h]
+            type_desc = f"{d['typename']}{d['templateArgs']}"
+            if d["isTemplate"] and not d["specialized"]:
+                print(f"template class {type_desc};",file=f)
+            if d["isIdentified"]:
+                print(f"template CStreamNode createStreamNode({type_desc} &obj) ;",file=f)
+
+        
+        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

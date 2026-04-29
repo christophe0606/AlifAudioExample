@@ -16,7 +16,7 @@ class KWSClassify : public StreamNode
 {
     static constexpr size_t nbLabels = 12;
     static constexpr size_t historySize = 4;
-    static constexpr char *const labelsVec[nbLabels] = {
+    static constexpr const char *labelsVec[nbLabels] = {
         "down",
         "go",
         "left",

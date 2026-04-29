@@ -14,3 +14,9 @@ class MFCC(GenericNode):
     @property
     def typeName(self):
         return "MFCC"
+    
+    # Specializations already provided by the C++ and that should not be
+    # instantiated again when enabling code size optimization
+    @classmethod
+    def specializations(cls):
+        return set(["<float,640,float,10>"])

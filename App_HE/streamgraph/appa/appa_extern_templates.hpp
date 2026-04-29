@@ -6,7 +6,6 @@ extern template class SlidingBuffer<float,640,320>;
 extern template CStreamNode createStreamNode(SlidingBuffer<float,640,320> &obj) ;
 extern template class DeinterleaveStereo<sq15,320,q15_t,320,q15_t,320>;
 extern template CStreamNode createStreamNode(DeinterleaveStereo<sq15,320,q15_t,320,q15_t,320> &obj) ;
-extern template class MFCC<float,640,float,10>;
 extern template CStreamNode createStreamNode(MFCC<float,640,float,10> &obj) ;
 extern template class SlidingBuffer<float,490,480>;
 extern template CStreamNode createStreamNode(SlidingBuffer<float,490,480> &obj) ;

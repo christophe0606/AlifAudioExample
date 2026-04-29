@@ -4,76 +4,98 @@
         "isTemplate": true,
         "templateArgs": "<sq15,320>",
         "typename": "VStreamAudioSource",
-        "isIdentified": true
+        "isIdentified": true,
+        "specialized": false,
+        "hasSelectors": false
     },
     "SlidingBuffer<float,640,320>": {
         "folder": "nodes/",
         "isTemplate": true,
         "templateArgs": "<float,640,320>",
         "typename": "SlidingBuffer",
-        "isIdentified": true
+        "isIdentified": true,
+        "specialized": false,
+        "hasSelectors": false
     },
     "DeinterleaveStereo<sq15,320,q15_t,320,q15_t,320>": {
         "folder": "nodes/",
         "isTemplate": true,
         "templateArgs": "<sq15,320,q15_t,320,q15_t,320>",
         "typename": "DeinterleaveStereo",
-        "isIdentified": true
+        "isIdentified": true,
+        "specialized": false,
+        "hasSelectors": false
     },
     "MFCC<float,640,float,10>": {
         "folder": "appnodes/",
         "isTemplate": true,
         "templateArgs": "<float,640,float,10>",
         "typename": "MFCC",
-        "isIdentified": true
+        "isIdentified": true,
+        "specialized": true,
+        "hasSelectors": false
     },
     "SlidingBuffer<float,490,480>": {
         "folder": "nodes/",
         "isTemplate": true,
         "templateArgs": "<float,490,480>",
         "typename": "SlidingBuffer",
-        "isIdentified": true
+        "isIdentified": true,
+        "specialized": false,
+        "hasSelectors": false
     },
     "NullSink<q15_t,320>": {
         "folder": "nodes/",
         "isTemplate": true,
         "templateArgs": "<q15_t,320>",
         "typename": "NullSink",
-        "isIdentified": true
+        "isIdentified": true,
+        "specialized": false,
+        "hasSelectors": false
     },
     "SendToNetwork<float,490>": {
         "folder": "nodes/",
         "isTemplate": true,
         "templateArgs": "<float,490>",
         "typename": "SendToNetwork",
-        "isIdentified": true
+        "isIdentified": true,
+        "specialized": false,
+        "hasSelectors": false
     },
     "Convert<q15_t,320,float,320>": {
         "folder": "nodes/",
         "isTemplate": true,
         "templateArgs": "<q15_t,320,float,320>",
         "typename": "Convert",
-        "isIdentified": true
+        "isIdentified": true,
+        "specialized": false,
+        "hasSelectors": false
     },
     "KWSClassify": {
         "folder": "appnodes/",
         "isTemplate": false,
         "templateArgs": "",
         "typename": "KWSClassify",
-        "isIdentified": true
+        "isIdentified": true,
+        "specialized": false,
+        "hasSelectors": false
     },
     "KWSDisplay": {
         "folder": "appnodes/",
         "isTemplate": false,
         "templateArgs": "",
         "typename": "KWSDisplay",
-        "isIdentified": true
+        "isIdentified": true,
+        "specialized": false,
+        "hasSelectors": false
     },
     "KWS": {
         "folder": "appnodes/",
         "isTemplate": false,
         "templateArgs": "",
         "typename": "KWS",
-        "isIdentified": false
+        "isIdentified": false,
+        "specialized": false,
+        "hasSelectors": false
     }
 }

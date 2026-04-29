@@ -4,13 +4,17 @@
         "isTemplate": true,
         "templateArgs": "<sq15,320>",
         "typename": "VStreamAudioSource",
-        "isIdentified": true
+        "isIdentified": true,
+        "specialized": false,
+        "hasSelectors": false
     },
     "NullSink<sq15,320>": {
         "folder": "nodes/",
         "isTemplate": true,
         "templateArgs": "<sq15,320>",
         "typename": "NullSink",
-        "isIdentified": true
+        "isIdentified": true,
+        "specialized": false,
+        "hasSelectors": false
     }
 }

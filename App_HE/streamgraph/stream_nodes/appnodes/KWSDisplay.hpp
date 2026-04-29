@@ -3,7 +3,6 @@
 #include "EventQueue.hpp"
 #include "RTE_Components.h"
 #include "config.h"
-#include "m-profile/armv7m_cachel1.h"
 #include <arm_mve.h>
 #include <cstddef>
 #include <cstdint>
@@ -25,7 +24,6 @@ extern "C"
 #include "Driver_CDC200.h"
 #include "cmsis_os2.h"
 #include "cmsis_vstream.h"
-#include "config.h"
 #include "kws_img.h"
 }
 
@@ -39,8 +37,8 @@ class KWSDisplay : public VStreamVideoSink
     static constexpr uint32_t duration = 2;
 
   public:
-    KWSDisplay()
-        : VStreamVideoSink()
+    KWSDisplay(EventQueue *queue)
+        : VStreamVideoSink(), eventQueue(queue)
     {
     }
 
@@ -112,7 +110,7 @@ class KWSDisplay : public VStreamVideoSink
         uint16_t *renderingFrame = (uint16_t *)this->renderingFrame();
         if (renderingFrame == nullptr)
         {
-            ERROR_PRINT("Failed to get rendering frame");
+            CMSISSTREAM_LOG_ERR("Failed to get rendering frame");
             return;
         }
         memset(renderingFrame, 0x00, DISPLAY_IMAGE_SIZE);
@@ -133,7 +131,7 @@ class KWSDisplay : public VStreamVideoSink
             bool canRender = this->renderNewFrame();
             // Ask for new frame
             Event evt(kDo, kNormalPriority);
-            EventQueue::cg_eventQueue->push(LocalDestination{this, 0}, std::move(evt));
+            eventQueue->push(LocalDestination{this, 0}, std::move(evt));
         }
         else
         {
@@ -161,7 +159,8 @@ class KWSDisplay : public VStreamVideoSink
             bool canRender = this->renderNewFrame();
             Event evt(kDo, kNormalPriority);
             evt.setTTL(40);
-            EventQueue::cg_eventQueue->push(LocalDestination{this, 0}, std::move(evt));
+
+            eventQueue->push(LocalDestination{this, 0}, std::move(evt));
         }
     }
 
@@ -184,6 +183,7 @@ class KWSDisplay : public VStreamVideoSink
     }
 
   protected:
+    EventQueue *eventQueue;
     uint32_t startMs;
     q15_t alpha{0};
     const uint8_t *currentImg{nullptr};

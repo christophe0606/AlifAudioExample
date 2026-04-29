@@ -2,7 +2,6 @@
 
 #include "RTE_Components.h"
 #include "config.h"
-#include "m-profile/armv7m_cachel1.h"
 #include "soc.h"
 #include <utility>
 #include <variant>
@@ -20,7 +19,7 @@
 extern "C"
 {
 #include "lcd.h"
-#include "config.h"
+#include "camera_config.h"
 }
 
 using namespace arm_cmsis_stream;
@@ -48,13 +47,13 @@ class VStreamVideoSink : public StreamNode
 
         if (lcd->Initialize(VStreamVideoSink::VideoSink_Event_Callback) != DISPLAY_OK)
         {
-            ERROR_PRINT("Failed to initialize LCD output\n");
+            CMSISSTREAM_LOG_ERR("Failed to initialize LCD output\n");
         }
 
         /* Set Input Video buffer */
         if (lcd->SetBuf(LCD_Frame, DISPLAY_IMAGE_SIZE) != DISPLAY_OK)
         {
-            ERROR_PRINT("Failed to set buffer for video output\n");
+            CMSISSTREAM_LOG_ERR("Failed to set buffer for video output\n");
         }
     }
 
@@ -67,12 +66,12 @@ class VStreamVideoSink : public StreamNode
     {
         if (lcd->Stop() != DISPLAY_OK)
         {
-            ERROR_PRINT("Failed to stop video output\n");
+            CMSISSTREAM_LOG_ERR("Failed to stop video output\n");
         }
 
         if (lcd->Uninitialize() != DISPLAY_OK)
         {
-            ERROR_PRINT("Failed to uninitialize video output\n");
+            CMSISSTREAM_LOG_ERR("Failed to uninitialize video output\n");
         }
     };
 
@@ -85,7 +84,7 @@ class VStreamVideoSink : public StreamNode
 
         if (inRender.load())
         {
-            DEBUG_PRINT("Already in render\n");
+            CMSISSTREAM_LOG_DBG("Already in render\n");
             return false;
         }
 
@@ -105,7 +104,7 @@ class VStreamVideoSink : public StreamNode
 
         if (lcd->Start() != DISPLAY_OK)
         {
-            ERROR_PRINT("Failed to start LCD output\n");
+            CMSISSTREAM_LOG_ERR("Failed to start LCD output\n");
         }
         return true;
     }
@@ -116,7 +115,7 @@ class VStreamVideoSink : public StreamNode
         lcd->SwitchBuffers();
         if (lcd->Start() != DISPLAY_OK)
         {
-            ERROR_PRINT("Failed to start LCD output\n");
+            CMSISSTREAM_LOG_ERR("Failed to start LCD output\n");
         }
         return CG_SUCCESS;
     }
