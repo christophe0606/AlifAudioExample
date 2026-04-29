@@ -13,36 +13,46 @@ def generate_camera(codeSizeOptimization=False ):
 
     the_graph = Graph()
     
-    AUDIO_BLOCK = 512 
-    FFT_SIZE = 512 
+    SAMPLING_FREQ_HZ = 16000
+    AUDIO_PACKET_DURATION = 20 # ms (320 samples)
+    OVERLAP_DURATION = AUDIO_PACKET_DURATION 
+    WINDOWS_DURATION = 2*AUDIO_PACKET_DURATION 
+    
+    NB_AUDIO_SAMPLES = int(1e-3 * AUDIO_PACKET_DURATION * SAMPLING_FREQ_HZ)
+    NB_OVERLAP_SAMPLES = int(1e-3 * OVERLAP_DURATION * SAMPLING_FREQ_HZ)
+    NB_WINDOW_SAMPLES = int(1e-3 * WINDOWS_DURATION * SAMPLING_FREQ_HZ)
+    
+    FFT_SIZE = 1024 # 512
+    
+    NB = NB_AUDIO_SAMPLES
+    
     
     # Use CMSIS VStream to connect to microphones
-    src = VStreamAudioSource("audioSource",AUDIO_BLOCK)
+    src = VStreamAudioSource("audioSource",NB)
+    gain = Gain("gain",Q15_STEREO,NB,4)
     # With video there are underflow or overflow in audio
     # vStream may not be flexible enough and using SAI 
     # directly may be better to support more
     # constrained environment
     #speaker = VStreamAudioSink("audioSink",3*AUDIO_BLOCK)
-    speaker = NullSink("audioSink",Q15_STEREO,3*AUDIO_BLOCK)
+    speaker = NullSink("audioSink",Q15_STEREO,3*NB)
     video = VStreamVideoSource("videoSource")
     
-    src_left = SRC("srcLeft",AUDIO_BLOCK)
-    src_right= SRC("srcRight",AUDIO_BLOCK)
+    audioWinLeft=SlidingBuffer("audioWinLeft",CType(F32),NB_WINDOW_SAMPLES,NB_OVERLAP_SAMPLES)
+    audioWinRight=SlidingBuffer("audioWinRight",CType(F32),NB_WINDOW_SAMPLES,NB_OVERLAP_SAMPLES)
+    
+    win_left = Hanning("winLeft",NB_WINDOW_SAMPLES,FFT_SIZE)
+    win_right= Hanning("winRight",NB_WINDOW_SAMPLES,FFT_SIZE)
     
     # Debug source can be used instead to generate a sine
     # with amplitude modulation
     #src = DebugSource("audioSource",AUDIO_BLOCK)
-    to_f32 = Convert("to_f32",Q15_STEREO,F32_STEREO,AUDIO_BLOCK)
-    to_q15 = Convert("to_q15",F32_STEREO,Q15_STEREO,3*AUDIO_BLOCK)
+    to_f32 = Convert("to_f32",Q15_STEREO,F32_STEREO,NB)
+    deinterleave = DeinterleaveStereo("deinterleave",F32_STEREO,NB)
     
-    win_left = Hanning("winLeft",AUDIO_BLOCK)
-    win_right= Hanning("winRight",AUDIO_BLOCK)
     
-    deinterleave = DeinterleaveStereo("deinterleave",F32,AUDIO_BLOCK)
-    interleave = InterleaveStereo("interleave",F32,3*AUDIO_BLOCK)
-    
-    to_complex_left = RealToComplex("toComplexLeft",F32,AUDIO_BLOCK)
-    to_complex_right= RealToComplex("toComplexRight",F32,AUDIO_BLOCK)
+    to_complex_left = RealToComplex("toComplexLeft",F32,FFT_SIZE)
+    to_complex_right= RealToComplex("toComplexRight",F32,FFT_SIZE)
     fft_left = CFFT("fftLeft",F32_COMPLEX,FFT_SIZE)
     fft_right = CFFT("fftRight",F32_COMPLEX,FFT_SIZE)
     
@@ -51,38 +61,31 @@ def generate_camera(codeSizeOptimization=False ):
     
     display = AppDisplay("display")
     
-    mixer = Mixer("mixer",AUDIO_BLOCK)
+    mixer = Mixer("mixer",NB)
     
     
-    the_graph.connect(src.o,to_f32.i)
+    the_graph.connect(src.o,gain.i)
+    the_graph.connect(gain.o,to_f32.i)
     the_graph.connect(to_f32.o,deinterleave.i)
-    the_graph.connect(deinterleave.l,win_left.i)
-    the_graph.connect(deinterleave.r,win_right.i)
-    
+
+    the_graph.connect(deinterleave.l,audioWinLeft.i)
+    the_graph.connect(audioWinLeft.o,win_left.i)
     the_graph.connect(win_left.o,to_complex_left.i)
-    the_graph.connect(win_right.o,to_complex_right.i)
-    
     the_graph.connect(to_complex_left.o,fft_left.i)
-    the_graph.connect(to_complex_right.o,fft_right.i)
     the_graph.connect(fft_left.o,spectrogram_left.i)
+
+    the_graph.connect(deinterleave.r,audioWinRight.i)
+    the_graph.connect(audioWinRight.o,win_right.i)
+    the_graph.connect(win_right.o,to_complex_right.i)
+    the_graph.connect(to_complex_right.o,fft_right.i)
     the_graph.connect(fft_right.o,spectrogram_right.i)
+
     
     the_graph.connect(spectrogram_left["oev0"],display["iev0"])
     the_graph.connect(spectrogram_right["oev0"],display["iev1"])
     the_graph.connect(video["oev0"],display["iev2"])
     
-    the_graph.connect(deinterleave.l,mixer.inl)
-    the_graph.connect(deinterleave.r,mixer.inr)
-    
-    the_graph.connect(mixer.oul,src_left.i)
-    the_graph.connect(mixer.our,src_right.i)
-    
-    the_graph.connect(src_left.o,interleave.l)
-    the_graph.connect(src_right.o,interleave.r)
-    the_graph.connect(interleave.o,to_q15.i)
-    the_graph.connect(to_q15.o,speaker.i)
-    
-    
+   
     class MyStyle(Style):
         
         def edge_color(self,edge):

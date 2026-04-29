@@ -65,9 +65,8 @@ using namespace arm_cmsis_stream;
 #define NB_APPS 2
 // 0 : KWS
 // 1 : Camera
-static int currentNetwork = 0;
+static int currentNetwork = 1;
 
-#define SWITCH_EVENT (1 << 0)
 
 /**
  * @brief Array of stream execution contexts, one per network.
@@ -100,8 +99,24 @@ void interrupt_thread_function(void *)
 {
 	printf("Started interrupt thread\n");
 
+	CStreamNode* video = static_cast<CStreamNode *>(get_scheduler_appb_node(STREAM_APPB_VIDEOSOURCE_ID));
+    if (video == nullptr) {
+		CMSISSTREAM_LOG_ERR("Error getting video source node\n");
+		return;
+	}
+
+	StreamNode *videoNode = static_cast<StreamNode *>(video->obj);
+	if (videoNode == nullptr) {
+		CMSISSTREAM_LOG_ERR("Error getting video source node object\n");
+		return;
+	}
+	
+
 	for (;;) {
-		uint32_t res = osEventFlagsWait(cg_interruptEvent, SWITCH_EVENT, osFlagsWaitAny, osWaitForever);
+		uint32_t res = osEventFlagsWait(cg_interruptEvent, 
+			SWITCH_EVENT | VIDEO_SOURCE_FRAME_EVENT, 
+			osFlagsWaitAny, 
+			osWaitForever);
 		if ((res & SWITCH_EVENT) != 0) {
 			CMSISSTREAM_LOG_DBG("Received Switching network event\n");
 			currentNetwork = (currentNetwork + 1) % NB_APPS;
@@ -109,6 +124,12 @@ void interrupt_thread_function(void *)
 			stream_pause_current_scheduler();
 			stream_resume_scheduler(&contexts[currentNetwork]);
 			CMSISSTREAM_LOG_DBG("Context switch done\n");
+		}
+		if ((res & VIDEO_SOURCE_FRAME_EVENT) != 0) {
+			CMSISSTREAM_LOG_DBG("Received new camera frame event\n");
+			Event evt(kDo, kNormalPriority);
+			evt.setTTL(40);
+			contexts[currentNetwork].evtQueue->push(LocalDestination{videoNode, 0}, std::move(evt));
 		}
 	}
 	printf("Interrupt thread ended\n");
@@ -215,7 +236,10 @@ int app_main(void)
     int err;
 	EventQueue *queue_app[NB_APPS];
 
-	CMSISSTREAM_LOG_ERR("Starting main\n");
+	CMSISSTREAM_LOG_DBG("Starting main\n");
+
+	cg_interruptEvent= osEventFlagsNew(NULL);
+
 
 	/*
 	Configure hardware audio source and display
@@ -230,23 +254,33 @@ int app_main(void)
 
 	*/
 
+	osEventFlagsId_t audioSrcEvent = 0;
+	const vStreamDriver_t *audioSrcDriver = nullptr;
+
+	osEventFlagsId_t videoSrcEvent = 0;
+	const vStreamDriver_t *videoSrcDriver = nullptr;
+
 #if defined(HAS_AUDIO_SRC)
-    osEventFlagsId_t audioSrcEvent;
-	const vStreamDriver_t *audioSrcDriver = init_audio_source(audioSrcEvent);
+    audioSrcDriver = init_audio_source(audioSrcEvent);
 
 	if (audioSrcDriver == nullptr) {
 		CMSISSTREAM_LOG_ERR("Error initializing audio source\n");
 		goto error;
 	}
-#else
-    osEventFlagsId_t audioSrcEvent = 0;
-	const vStreamDriver_t *audioSrcDriver = nullptr;
+#endif
+
+#if defined(HAS_CAMERA_SRC)
+    videoSrcDriver = init_video_source(cg_interruptEvent);
+
+	if (videoSrcDriver == nullptr) {
+		CMSISSTREAM_LOG_ERR("Error initializing video source\n");
+		goto error;
+	}
 #endif
 
 // Config button
 
 
-// Config display
 
 #if defined(EXTERNAL_NETWORK)
     err = setup_flash();
@@ -323,6 +357,8 @@ int app_main(void)
 	for (int network = 0; network < NB_APPS; network++) {
 		params[network]->audio_src = audioSrcDriver;
 		params[network]->audioSrcEvent = audioSrcEvent;
+		params[network]->video_src = videoSrcDriver;
+		params[network]->videoSrcEvent = videoSrcEvent;
 	}
 
 	err = stream_init_memory();
@@ -364,7 +400,6 @@ int app_main(void)
 	}
 #endif
 
-	cg_interruptEvent= osEventFlagsNew(NULL);
 
 	/* Thread inits */
     tid_interrupts = osThreadNew(interrupt_thread_function, NULL, &interrupt_thread_attr);

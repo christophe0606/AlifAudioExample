@@ -6,10 +6,6 @@
 #include <RTE_Device.h>
 #include "Driver_CDC200.h" // Display driver
 
-#define NB_BINS 128
-
-#define SAMPLE_RATE 16000
-
 #include <stdio.h>
 #include <stdint.h>
 

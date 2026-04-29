@@ -7,6 +7,7 @@ extern "C"
 
 #include "cg_enums.h"
 #include "app_config.hpp"
+#include "EventQueue.hpp"
 #include "StreamNode.hpp"
 #include "GenericNodes.hpp"
 #include "arm_math_types.h"
@@ -81,7 +82,7 @@ class Spectrogram<cf32, inputSamples>
 
         if (!status)
         {
-            ERROR_PRINT("Failed to send spectrogram event\n");
+            CMSISSTREAM_LOG_ERR("Failed to send spectrogram event\n");
         }
 
 #else

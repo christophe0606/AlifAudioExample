@@ -6,6 +6,7 @@ class AppDisplay(VStreamVideoSink):
     def __init__(self,name):
         VStreamVideoSink.__init__(self,name)
         self.addEventInput(3)
+        self.addVariableArg("evtQueue")
 
 
     @property

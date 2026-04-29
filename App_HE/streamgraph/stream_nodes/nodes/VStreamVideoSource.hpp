@@ -2,9 +2,11 @@
 
 #include "RTE_Components.h"
 #include "config.h"
+#include "stream_runtime_config.hpp"
 
 #include CMSIS_device_header
 
+#include "EventQueue.hpp"
 #include "GenericNodes.hpp"
 #include "StreamNode.hpp"
 #include "arm_math_types.h"
@@ -15,8 +17,7 @@ extern "C"
 {
 #include "cmsis_os2.h"
 #include "cmsis_vstream.h"
-#include "camera.h"
-#include "config.h"
+#include "camera_config.h"
 }
 
 using namespace arm_cmsis_stream;
@@ -25,48 +26,51 @@ const osThreadAttr_t videoSrcAttr = {
     .stack_size = 4096,
     .priority = osPriorityHigh};
 
-extern vDbgStreamDriver_t Driver_vDbgStreamVideoIn;
-#define vStream_VideoIn (&Driver_vDbgStreamVideoIn)
+extern vStreamDriver_t Driver_vStreamVideoIn;
+#define vStream_VideoIn (&Driver_vStreamVideoIn)
 
 #define VSTREAM_VIDEO_SOURCE_BLOCK_EVT (0x1)
 
-class VStreamVideoSource : public StreamNode
+class VStreamVideoSource : public StreamNode, public ContextSwitch
 {
   public:
-    VStreamVideoSource(EventQueue *queue)
-        : StreamNode(),ev0(queue)
+    VStreamVideoSource(EventQueue *queue,const struct hardwareParams &settings)
+        : StreamNode(),ev0(queue),settings_(settings),eventQueue(queue)
     {
-
-        vStream_VideoIn->Initialize(VideoSrc_Event_Callback);
-
-        /* Set Input Video buffer */
-        if (vStream_VideoIn->SetBuf(CAM_Frame, sizeof(CAM_Frame), CAMERA_FRAME_SIZE) != VSTREAM_OK)
-        {
-            ERROR_PRINT("Failed to set buffer for video input\n");
-            PrintErrors(vStream_VideoIn->ErrorCode());
-        }
-
-        if (vStream_VideoIn->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
-        {
-            ERROR_PRINT("Failed to start video capture\n");
-            PrintErrors(vStream_VideoIn->ErrorCode());
-        }
     }
 
     ~VStreamVideoSource()
     {
-        if (vStream_VideoIn->Stop() != VSTREAM_OK)
+        if (settings_.video_src->Stop() != VSTREAM_OK)
         {
-            ERROR_PRINT("Failed to stop video input\n");
-            PrintErrors(vStream_VideoIn->ErrorCode());
+            CMSISSTREAM_LOG_ERR("Failed to stop video input\n");
         }
 
-        if (vStream_VideoIn->Uninitialize() != VSTREAM_OK)
-        {
-            ERROR_PRINT("Failed to uninitialize video input\n");
-            PrintErrors(vStream_VideoIn->ErrorCode());
-        }
     };
+
+     int pause() final
+	{
+		// Implementation of pause
+		if (started_.load() == false) {
+			// If it was never started, nothing to do
+			return 0;
+		}
+        int32_t rc = settings_.video_src->Stop();
+		if (rc != VSTREAM_OK) {
+			CMSISSTREAM_LOG_ERR("Video stop failed: %i", rc);
+		}
+		started_.store(false);
+		return 0;
+	}
+
+    int resume() final
+	{
+		Event evt(kDo, kNormalPriority);
+        evt.setTTL(40);
+
+        eventQueue->push(LocalDestination{this, 0}, std::move(evt));
+		return 0;
+	}
 
     void subscribe(int outputPort, StreamNode &dst, int dstPort)
     {
@@ -75,11 +79,10 @@ class VStreamVideoSource : public StreamNode
 
     static void release_video_frame(void *frame)
     {
-        DEBUG_PRINT("Release camera frame\n");
+        CMSISSTREAM_LOG_DBG("Release camera frame\n");
         if (vStream_VideoIn->ReleaseBlock() != VSTREAM_OK)
         {
-            ERROR_PRINT("Failed to release video input frame\n");
-            PrintErrors(vStream_VideoIn->ErrorCode());
+            CMSISSTREAM_LOG_ERR("Failed to release video input frame\n");
         }
         else
         {
@@ -89,11 +92,10 @@ class VStreamVideoSource : public StreamNode
                 status = vStream_VideoIn->GetStatus();
             } while (status.active == 1U);
 
-            if (vStream_VideoIn->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
-            {
-                ERROR_PRINT("Failed to start video capture\n");
-                PrintErrors(vStream_VideoIn->ErrorCode());
-            }
+            //if (vStream_VideoIn->Start(VSTREAM_MODE_SINGLE) != VSTREAM_OK)
+            //{
+            //    CMSISSTREAM_LOG_ERR("Failed to start video capture\n");
+            //}
         }
     }
 
@@ -101,26 +103,35 @@ class VStreamVideoSource : public StreamNode
     {
         if (evt.event_id == kDo)
         {
-            DEBUG_PRINT("kDo for video source\n");
+            CMSISSTREAM_LOG_DBG("kDo for video source\n");
             uint8_t *inFrame = (uint8_t *)vStream_VideoIn->GetBlock();
             if (inFrame != nullptr)
             {
                 //SCB_InvalidateDCache_by_Addr(inFrame, CAMERA_FRAME_SIZE);
 
-                DEBUG_PRINT("Send frame\n");
+                CMSISSTREAM_LOG_DBG("Send frame\n");
                 UniquePtr<uint16_t> rgb_buf((uint16_t *)inFrame, release_video_frame);
                 TensorPtr<uint16_t> t = TensorPtr<uint16_t>::create_with((uint16_t)2,
                                                                          cg_tensor_dims_t{CAMERA_FRAME_HEIGHT, CAMERA_FRAME_WIDTH},
                                                                          std::move(rgb_buf));
 
                 ev0.sendSync(kHighPriority, kValue, std::move(t)); // Send the event to the subscribed nodes
+                Event evt(kDo, kNormalPriority);
+                evt.setTTL(40);
+
+                eventQueue->push(LocalDestination{this, 0}, std::move(evt));
+		
             }
             else
             {
-                ERROR_PRINT("No camera frame available\n");
+                CMSISSTREAM_LOG_ERR("No camera frame available\n");
             }
         }
     }
 
+protected:
+    std::atomic<bool> started_ = false;
+    const struct hardwareParams &settings_;
+    EventQueue *eventQueue;
     EventOutput ev0;
 };

@@ -4,8 +4,11 @@ from .NodeTypes import *
 
 class VStreamVideoSource(GenericSource):
     def __init__(self,name):
-        GenericSource.__init__(self,name)
+        GenericSource.__init__(self,name,identified=True)
         self.addEventOutput(1)
+         # hw_ is common to all node and does not name a specific node
+        self.addVariableArg(f"params->hw_")
+
 
 
     @property

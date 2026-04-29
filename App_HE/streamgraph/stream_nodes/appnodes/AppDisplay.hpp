@@ -10,6 +10,7 @@
 
 #include <atomic>
 
+#include "EventQueue.hpp"
 #include "GenericNodes.hpp"
 #include "StreamNode.hpp"
 #include "arm_math_types.h"
@@ -31,8 +32,8 @@ using namespace arm_cmsis_stream;
 class AppDisplay : public VStreamVideoSink
 {
   public:
-    AppDisplay()
-        : VStreamVideoSink()
+    AppDisplay(EventQueue *queue)
+        : VStreamVideoSink(), eventQueue(queue)
     {
     }
 
@@ -294,6 +295,7 @@ class AppDisplay : public VStreamVideoSink
         rightSpectrogram = std::move(frame);
     }
 
+    EventQueue *eventQueue;
     TensorPtr<uint16_t> currentCameraFrame;
     TensorPtr<float> leftSpectrogram;
     TensorPtr<float> rightSpectrogram;

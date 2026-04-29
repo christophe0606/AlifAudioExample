@@ -10,3 +10,4 @@ extern "C"
 }
 
 extern vStreamDriver_t* init_audio_source(osEventFlagsId_t &audioSrcEvent);
+extern vStreamDriver_t *init_video_source(const osEventFlagsId_t &videoSrcEvent);

@@ -2,5 +2,19 @@
 #pragma once
 extern template class VStreamAudioSource<sq15,320>;
 extern template CStreamNode createStreamNode(VStreamAudioSource<sq15,320> &obj) ;
-extern template class NullSink<sq15,320>;
-extern template CStreamNode createStreamNode(NullSink<sq15,320> &obj) ;
+extern template class SlidingBuffer<float,640,320>;
+extern template CStreamNode createStreamNode(SlidingBuffer<float,640,320> &obj) ;
+extern template class DeinterleaveStereo<sf32,320,float,320,float,320>;
+extern template CStreamNode createStreamNode(DeinterleaveStereo<sf32,320,float,320,float,320> &obj) ;
+extern template class CFFT<cf32,1024,cf32,1024>;
+extern template CStreamNode createStreamNode(CFFT<cf32,1024,cf32,1024> &obj) ;
+extern template class Gain<sq15,320,sq15,320>;
+extern template class Spectrogram<cf32,1024>;
+extern template CStreamNode createStreamNode(Spectrogram<cf32,1024> &obj) ;
+extern template class RealToComplex<float,1024,cf32,1024>;
+extern template CStreamNode createStreamNode(RealToComplex<float,1024,cf32,1024> &obj) ;
+extern template class Convert<sq15,320,sf32,320>;
+extern template CStreamNode createStreamNode(Convert<sq15,320,sf32,320> &obj) ;
+extern template class Hanning<float,640,float,1024>;
+extern template CStreamNode createStreamNode(AppDisplay &obj) ;
+extern template CStreamNode createStreamNode(VStreamVideoSource &obj) ;

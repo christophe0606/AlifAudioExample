@@ -87,5 +87,9 @@ class ContextSwitch
 #include "stream_runtime_config.hpp"
 
 #define AUDIO_BLOCK 320
+#define NB_BINS 128
+
+#define SAMPLE_RATE 16000
 
 #define HAS_AUDIO_SRC
+#define HAS_CAMERA_SRC

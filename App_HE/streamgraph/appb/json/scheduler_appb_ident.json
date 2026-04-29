@@ -1,4 +1,15 @@
 {
   "audioSource": 0,
-  "sink": 1
+  "audioWinLeft": 1,
+  "audioWinRight": 2,
+  "deinterleave": 3,
+  "fftLeft": 4,
+  "fftRight": 5,
+  "spectrogramLeft": 6,
+  "spectrogramRight": 7,
+  "toComplexLeft": 8,
+  "toComplexRight": 9,
+  "to_f32": 10,
+  "display": 11,
+  "videoSource": 12
 }

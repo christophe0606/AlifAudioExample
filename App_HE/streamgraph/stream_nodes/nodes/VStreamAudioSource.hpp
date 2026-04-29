@@ -74,7 +74,7 @@ class VStreamAudioSource<sq15, outputSamples>
 	{
 		size_t size;
 		if (!started_.load()) {
-			CMSISSTREAM_LOG_DBG("Starting RX");
+			CMSISSTREAM_LOG_DBG("Starting audio\n");
 			
 			if (vStream_AudioIn->Start(VSTREAM_MODE_CONTINUOUS) != VSTREAM_OK)
             {

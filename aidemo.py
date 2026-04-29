@@ -8,8 +8,6 @@ from python.generate import generate_common_files
 APPS = {'appa':generate_kws, 
         'appb':generate_camera}
 
-APPS = {'appa':generate_kws,
-        'appb':generate_debug_b}
 
 parser = argparse.ArgumentParser(
                     prog='aidemo',

@@ -43,6 +43,8 @@ struct hardwareParams
 {
    const vStreamDriver_t *audio_src;
    osEventFlagsId_t audioSrcEvent;
+   const vStreamDriver_t *video_src;
+   osEventFlagsId_t videoSrcEvent;
 };
 
 #ifdef   __cplusplus
